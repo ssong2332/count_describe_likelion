@@ -1,8 +1,23 @@
 # 훅
 
-**이 디렉토리는 Claude Code 전용이다.** 안티그래비티는 `.agents/hooks.json` → `scripts/agy-guard.js`가 같은 규칙(`.env` 접근·main 직접 커밋)을 담당하고, Codex에는 강제 계층이 없다. 그러므로 여기 있는 규칙은 전부 AGENTS.md에도 문서로 존재해야 한다 — 훅은 물리 차단 보조 계층이지 규칙의 원본이 아니다.
+세 도구 모두 강제 계층이 있다. **여기 있는 스크립트는 Claude Code와 Codex가 공유**하고(payload 스키마 `tool_name`/`tool_input`와 차단 규약 exit 2가 동일), 안티그래비티만 출력 규약이 달라 별도 어댑터를 쓴다. 규칙의 원본은 언제나 AGENTS.md다 — 훅은 물리 차단 보조 계층이다.
 
-두 훅 체계는 규약이 다르다: Claude Code는 종료 코드(차단 `2`), 안티그래비티는 stdout JSON(`{"decision":"deny"}`). 규칙을 고칠 때는 **양쪽을 함께** 고친다.
+| 도구 | 배선 | 실행 스크립트 | 차단 신호 |
+|---|---|---|---|
+| Claude Code | `.claude/settings.json` | `.claude/hooks/*.js` | exit `2` |
+| Codex | `.codex/hooks.json` | **같은 `.claude/hooks/*.js`** | exit `2` |
+| 안티그래비티 | `.agents/hooks.json` | `scripts/agy-guard.js` | stdout `{"decision":"deny"}` |
+
+규칙을 고칠 때는 **세 배선과 두 스크립트를 함께** 본다. 특히 안티그래비티 어댑터는 별도 파일이라 드리프트가 생기기 쉽다.
+
+## 도구별 활성 조건 (지키지 않으면 조용히 무동작)
+
+| 도구 | 조건 |
+|---|---|
+| Codex | **최초 1회 `/hooks`로 훅 정의를 신뢰 승인해야 한다.** 승인 전에는 훅이 실행되지 않는다 |
+| Codex | `sandbox_mode`·`approval_policy`는 리포에 넣어도 무시된다 — `~/.codex/config.toml`에 각자 설정 |
+| 안티그래비티 | 훅 실행 cwd가 워크스페이스 루트라는 전제 (아래 참조) |
+| Claude Code | 별도 조건 없음 (프로젝트 settings.json 로드 시 활성) |
 
 **안티그래비티 훅의 전제**: `.agents/hooks.json`의 `node scripts/agy-guard.js`는 훅 실행 cwd가 **워크스페이스 루트**임을 전제한다(공식 문서에 cwd 규약 명시 없음). cwd가 다르면 스크립트를 못 찾아 **조용히 무동작**한다 — C6 검사도 이 경우를 잡지 못한다(파일은 실재하므로). 확인법: 안티그래비티에서 `.env` 열기를 시도해 차단되는지 1회 테스트. 차단이 안 되면 command를 `node ../scripts/agy-guard.js`로 바꾸거나 두 경로를 모두 시도하는 해석기로 되돌린다.
 
@@ -18,7 +33,9 @@
 | `block-main-writes.js` | 가드 | main/master 체크아웃 상태의 `git commit`, 다른 브랜치를 main에 직접 써넣는 refspec push |
 | `block-no-verify.js` | 가드 | `--no-verify`, `--no-gpg-sign`, 훅 우회 config |
 | `block-env-access.js` | 가드 | 실제 `.env` 읽기·수정·출력·덮어쓰기 (`.env.example`은 허용) |
-| `contract-check.js` | 노티파이어 | 규칙 문서 간 모순 5종(C1~C5) 검사 결과를 알림 |
+| `contract-check.js` | 노티파이어 | 규칙 문서 간 모순 6종(C1~C6) 검사 결과를 알림 (Claude Code에서만 자동 실행) |
+
+`block-env-access.js`는 Codex의 `apply_patch`도 처리한다 — 그 도구는 파일 경로가 아니라 **패치 본문**을 `tool_input.command`에 담으므로 `*** Add/Update/Delete File:` 줄에서 대상 경로를 파싱한다.
 
 ## 원칙
 

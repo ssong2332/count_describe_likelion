@@ -157,6 +157,14 @@ function checkHookWiring(findings) {
       }
     }
   }
+  const codexHooks = read(path.join(ROOT, ".codex", "hooks.json"));
+  if (codexHooks) {
+    for (const m of codexHooks.matchAll(/node\s+([.\w/\\-]+\.js)/g)) {
+      if (!fs.existsSync(path.join(ROOT, m[1]))) {
+        findings.push(`C6 .codex/hooks.json: 훅 스크립트 "${m[1]}" 이 없다.`);
+      }
+    }
+  }
   const agyHooks = read(path.join(ROOT, ".agents", "hooks.json"));
   if (agyHooks) {
     // command 안에서 참조하는 .js 경로를 모두 뽑아 하나라도 실재하는지 확인

@@ -1,7 +1,12 @@
 #!/usr/bin/env node
-// PreToolUse 가드 (Read/Edit/Write/NotebookEdit/Grep 및 Bash): 실제 .env 파일
-// (.env.local 등 변형 포함)의 읽기·수정·출력·덮어쓰기를 차단한다.
+// PreToolUse 가드 (Read/Edit/Write/NotebookEdit/Grep, Bash, Codex apply_patch):
+// 실제 .env 파일(.env.local 등 변형 포함)의 읽기·수정·출력·덮어쓰기를 차단한다.
 // AGENTS.md "시크릿 관리" 절을 강제한다: 추적·공유는 .env.example만.
+//
+// Claude Code와 Codex가 같은 payload 스키마(tool_name/tool_input)와 같은 차단
+// 규약(exit 2)을 쓰므로 이 스크립트 한 벌이 두 도구를 모두 담당한다.
+// 단 Codex의 apply_patch 는 파일 경로가 아니라 패치 본문을 tool_input.command 에
+// 담으므로 별도 분기에서 대상 경로를 파싱한다.
 //
 // Bash 문자열 매칭은 최선 노력 계층이지 보안 경계가 아니다 — 우발적·습관적
 // 위반을 잡는 용도이며, 의도적 우회는 막지 못한다(.claude/hooks/README.md).
@@ -26,6 +31,18 @@ readHookInput((payload) => {
 
   if (["Read", "Edit", "Write", "NotebookEdit"].includes(toolName)) {
     if (isEnvPath(ti.file_path)) block(`${toolName} "${ti.file_path}"`);
+    process.exit(0);
+  }
+
+  // Codex apply_patch: "*** Add/Update/Delete File: <경로>" / "*** Move to: <경로>"
+  if (toolName === "apply_patch") {
+    const patch = typeof ti.command === "string" ? ti.command : typeof ti.patch === "string" ? ti.patch : "";
+    for (const m of patch.matchAll(/^\*\*\*\s+(?:Add|Update|Delete)\s+File:\s*(.+?)\s*$/gm)) {
+      if (isEnvPath(m[1])) block(`apply_patch 대상 "${m[1]}"`);
+    }
+    for (const m of patch.matchAll(/^\*\*\*\s+Move\s+to:\s*(.+?)\s*$/gm)) {
+      if (isEnvPath(m[1])) block(`apply_patch 이동 대상 "${m[1]}"`);
+    }
     process.exit(0);
   }
 

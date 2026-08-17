@@ -93,7 +93,7 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 - 실제 `.env` 파일(`.env.local` 등 변형 포함)은 에이전트가 읽기·수정·출력·복사하지 않는다. 값이 필요하면 사용자에게 요청한다.
 - 저장소에 추적·공유하는 것은 `.env.example`(플레이스홀더만)뿐이다.
 - 코드·문서·로그·보고서에 API 키·비밀번호·토큰을 적지 않는다.
-- Claude Code(`.claude/hooks/block-env-access.js`)와 안티그래비티(`scripts/agy-guard.js`)가 이를 물리 차단한다. **Codex에는 아직 강제 계층이 없으므로 이 조항이 유일한 방벽이다** — 예외 없이 지킨다.
+- 세 도구 모두 이를 물리 차단한다: Claude Code·Codex는 `.claude/hooks/block-env-access.js`, 안티그래비티는 `scripts/agy-guard.js`. **다만 Codex는 `/hooks` 신뢰 승인 전, 안티그래비티는 훅 cwd 전제가 어긋나면 무동작하므로** 이 조항이 최종 방벽이다 — 예외 없이 지킨다.
 
 ## 막히면 (즉흥 대처 대신 지정된 행동)
 
@@ -119,6 +119,7 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 | docs/KitFeedback.md | 사용자 | 누구나 행 추가 가능 (기존 행 수정 금지 — 상태 열 제외) |
 | .claude/hooks/, .claude/settings.json | 사용자 | 읽기 전용 — 차단을 우회하려고 편집하는 대상이 아니다 |
 | .agents/hooks.json, scripts/agy-guard.js | 사용자 | 읽기 전용 (안티그래비티 강제 계층) — 우회 목적 편집 금지 |
+| .codex/hooks.json | 사용자 | 읽기 전용 (Codex 강제 계층) — 우회 목적 편집 금지 |
 | .agents/skills/ | 사용자 | 읽기 전용 (3-도구 공용 상세 가이드) |
 | 소스 코드 | implementer | 읽기 전용 |
 
@@ -165,9 +166,11 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 |---|---|---|
 | Claude Code | `.claude/hooks/` 가드 3종 + `contract-check.js` 알림 | main 직접 커밋, 훅 우회 플래그, `.env` 접근(Grep 포함) / 규칙 문서 모순 |
 | 안티그래비티 | `.agents/hooks.json` → `scripts/agy-guard.js` | `.env` 접근, main 직접 커밋, 병합 없는 refspec push |
-| Codex | **미구성** (`.codex/hooks.json` PreToolUse 훅을 지원하나 이 템플릿에는 아직 없음 — 도입 시 사용자가 `/hooks`로 1회 신뢰 승인 필요) | (현재 없음) |
+| Codex | `.codex/hooks.json` → **`.claude/hooks/` 가드 3종 재사용** (payload·차단 규약이 Claude와 동일) | main 직접 커밋, 훅 우회 플래그, `.env` 접근(`apply_patch` 패치 본문 포함) |
 
-Codex에는 아직 강제 계층이 없으므로, 위 규칙들을 문서에서 지우면 그 도구에서는 아무 보호도 남지 않는다. 상세는 `.claude/hooks/README.md`.
+**Codex는 최초 1회 `/hooks`로 훅 정의를 신뢰 승인해야 실행된다** — 승인 전에는 조용히 무동작이므로 새 프로젝트에서 반드시 확인한다. 또한 `sandbox_mode`·`approval_policy`는 리포에 넣어도 무시되므로(유저 레벨 `~/.codex/config.toml` 전용) 각자 설정한다.
+
+세 도구 모두 강제 계층이 있지만 규칙의 원본은 이 문서다. 여기서 규칙을 지우면 훅만 남고 근거가 사라진다. 상세는 `.claude/hooks/README.md`.
 
 ## Git 규칙
 
