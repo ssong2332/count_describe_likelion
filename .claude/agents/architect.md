@@ -32,9 +32,9 @@ model: opus
 ## 보고 (최종 출력)
 ```
 ### 결론: {설계 핵심 한 줄}
-| 항목 | 결과 | 근거 |
-| 구조 | {모듈 수·핵심 경계} | docs/Architecture.md |
-| 결정 | {건수} | docs/DECISIONS.md, adr/nnnn |
+| 항목 | 결과 | 이전/기준값 | 근거 |
+| 구조 | {모듈 수·핵심 경계} | {변경 전 구조 또는 —} | docs/Architecture.md |
+| 결정 | {건수} | {기존 결정 수 또는 —} | docs/DECISIONS.md, adr/nnnn |
 ### Open Questions: {사용자 결정 필요 항목 — 없으면 "없음"}
 ### 승인 요청: docs/Architecture.md 승인 여부 결정 필요 — 승인 후 구현 단계 진행
 ```

@@ -1,16 +1,15 @@
 #!/usr/bin/env node
-// PreToolUse guard for Bash: blocks `git commit` while on main/master, and
-// blocks a `git push` refspec that writes a *different* branch into
-// main/master without a local merge (e.g. `git push origin fix/x:main`).
-// Enforces docs/GitWorkflow.md ("No direct commits to main").
+// PreToolUse 가드 (Bash): main/master 체크아웃 상태의 `git commit`과,
+// 다른 브랜치를 병합 없이 main/master ref에 직접 써넣는 refspec push를 차단한다.
+// docs/GitWorkflow.md("main 직접 커밋 금지, main은 병합으로만 갱신")를 강제한다.
 //
-// Deliberately does NOT block a plain `git push` / `git push origin main`
-// while legitimately on main — that is the orchestrator's/user's normal
-// final step after merging a task branch (AGENTS.md "Who Merges"), and
-// blocking it would make that required step impossible, not enforce
-// anything. Only a commit that bypasses review can ever land new content
-// on main in the first place; once that is blocked, a same-branch push
-// only ever ships history that already went through a real merge.
+// 의도적으로 막지 않는 것: main에서의 평범한 `git push` / `git push origin main`.
+// 병합을 마친 사용자·메인 세션의 정상적인 마지막 단계이기 때문이다(docs/GitWorkflow.md 병합 절).
+// 리뷰를 우회해 main에 새 내용을 실을 수 있는 경로는 커밋뿐이므로, 커밋을 막으면
+// 같은 브랜치 push는 이미 병합을 거친 이력만 나른다.
+//
+// 한계: 브랜치 판정은 명령 실행 전 HEAD 기준이다. `git checkout main && git commit`
+// 같은 복합 명령은 판정을 비껴간다 — 명령을 나눠 실행할 것(.claude/hooks/README.md).
 const { readHookInput } = require("./lib/read-hook-input");
 
 readHookInput((payload) => {
@@ -18,32 +17,36 @@ readHookInput((payload) => {
   if (typeof command !== "string") process.exit(0);
 
   const isCommit = /\bgit\s+commit\b/.test(command);
-  // e.g. "git push origin fix/x:main" or "git push origin HEAD:master" —
-  // an explicit source ref other than main/master written into main/master.
-  const isBypassPush = /\bgit\s+push\b[^\n]*\s(?!(?:main|master)\b)[\w./-]+:(main|master)\b/.test(command);
-  if (!isCommit && !isBypassPush) process.exit(0);
+  // 예: "git push origin fix/x:main", "git push origin HEAD:refs/heads/master"
+  const refspec = command.match(/\bgit\s+push\b[^\n]*\s([\w./-]+):(?:refs\/heads\/)?(main|master)\b/);
+  if (!isCommit && !refspec) process.exit(0);
 
   const { execSync } = require("child_process");
   let branch = "";
   try {
     branch = execSync("git rev-parse --abbrev-ref HEAD", { encoding: "utf8" }).trim();
   } catch {
-    process.exit(0); // not a git repo / no commits yet — nothing to protect
+    process.exit(0); // git 리포가 아니거나 커밋이 없음 — 보호 대상 없음 (fail-open)
   }
   const onProtectedBranch = branch === "main" || branch === "master";
 
   if (isCommit && onProtectedBranch) {
     console.error(
-      `Blocked: "git commit" while checked out on "${branch}". docs/GitWorkflow.md prohibits direct commits to main — create a task branch first (feat/fix/docs per the branch table).`
+      `차단: "${branch}" 체크아웃 상태에서 git commit — docs/GitWorkflow.md: main 직접 커밋 금지. feat/fix 브랜치를 먼저 만들 것.`
     );
     process.exit(2);
   }
 
-  if (isBypassPush) {
-    console.error(
-      `Blocked: refspec push writes a different branch directly into main/master without a local merge. docs/GitWorkflow.md: merge locally (fast-forward preferred) as the orchestrator/user, then push — never push a branch straight into main's ref.`
-    );
-    process.exit(2);
+  if (refspec) {
+    const src = refspec[1];
+    const srcIsProtected = /^(refs\/heads\/)?(main|master)$/.test(src);
+    const srcIsHeadOnProtected = src === "HEAD" && onProtectedBranch;
+    if (!srcIsProtected && !srcIsHeadOnProtected) {
+      console.error(
+        `차단: refspec push가 다른 브랜치를 병합 없이 main/master에 직접 써넣는다 — docs/GitWorkflow.md: main은 병합으로만 갱신. 로컬에서 병합한 뒤 push할 것.`
+      );
+      process.exit(2);
+    }
   }
 
   process.exit(0);

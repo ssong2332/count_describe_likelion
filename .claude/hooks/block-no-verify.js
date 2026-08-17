@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-// PreToolUse guard for Bash: blocks hook-skipping / signing-bypass git flags.
-// Enforces CLAUDE.md/AGENTS.md: "Never skip hooks or bypass signing unless
-// the user has explicitly asked for it."
+// PreToolUse 가드 (Bash): 훅·서명을 우회하는 git 플래그를 차단한다.
+// docs/GitWorkflow.md 금지 조항("--no-verify 등 훅 우회 금지")을 강제한다.
 const { readHookInput } = require("./lib/read-hook-input");
 
 readHookInput((payload) => {
@@ -11,13 +10,14 @@ readHookInput((payload) => {
   const skipPatterns = [
     /--no-verify\b/,
     /--no-gpg-sign\b/,
-    /-c\s+commit\.gpgsign=false\b/,
-    /-c\s+core\.hooksPath=/,
+    /\bcommit\b[^\n]*\s-n\b/, // git commit -n (--no-verify 단축형; git clean -n 등 커밋 외 -n과 구분)
+    /-c\s*commit\.gpgsign=false\b/,
+    /-c\s*core\.hooksPath=/,
   ];
   const hit = skipPatterns.find((p) => p.test(command));
   if (hit) {
     console.error(
-      `Blocked: git command skips hooks/signing (matched ${hit}). Never use --no-verify/--no-gpg-sign/a hook-bypass config unless the user explicitly asked for this exact command this turn.`
+      `차단: 훅/서명을 우회하는 git 플래그 (${hit}) — docs/GitWorkflow.md: 훅 우회 금지. 사용자가 이번 턴에 이 명령을 명시적으로 요청한 경우에만 예외.`
     );
     process.exit(2);
   }

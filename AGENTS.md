@@ -16,16 +16,18 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 ## 개발 파이프라인
 
 ```
-아이디어 인터뷰 → 기획 → [사용자 승인] → 설계 → [사용자 승인] → 구현
+아이디어 인터뷰 → [완성 선언] → 기획 → [사용자 승인] → 설계 → [사용자 승인] → 구현
      → 리뷰 / 검증 → (수정 필요 시: 구현으로 복귀) → 문서화
 ```
+
+(다이어그램은 요약이다 — 게이트 전체와 복귀 경로는 아래 표·불릿이 기준.)
 
 | 단계 | 산출물 | 통과 게이트 |
 |---|---|---|
 | 아이디어 인터뷰 | 명세 요약 (커버리지 11항목) | 사용자가 "완성" 선언 |
 | 기획 | docs/PRD.md, docs/Tasks.md | 사용자 승인 |
 | 설계 | docs/Architecture.md, docs/DECISIONS.md, docs/adr/ | 사용자 승인 |
-| 구현 | 소스 코드 | docs/DefinitionOfDone.md 체크리스트 전부 통과 |
+| 구현 | 소스 코드 | docs/DefinitionOfDone.md 체크리스트 전부 통과 (Tasks "검증중" 항목은 예외 — DoD 머리글의 예외 조항) |
 | 리뷰 | 리뷰 보고서 (파일 수정 없음) | 치명 결함 0건 |
 | 검증 | 테스트 보고서 (실행 출력 포함) | 정의된 테스트 전부 실행·통과 |
 | 문서화 | README.md, docs/CHANGELOG.md 갱신 | 이번 변경분 반영 완료 |
@@ -47,6 +49,7 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 | implementer의 "검증 전환 요청" 수령 | planner(검증중 전환) → reviewer + quality-assurance |
 | 리뷰·QA 통과 | planner(완료 전환) → docs |
 | 리뷰·QA에서 결함 보고 | implementer (설계 결함이면 architect 먼저) |
+| 한 작업의 문서화까지 완료 → 다음 작업 착수 | planner(다음 T-xx "진행" 전환) → implementer |
 
 ## 검증 루프 (테스트 우선)
 
@@ -74,7 +77,7 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 ### 문제/다음 단계: {있으면 — 다음에 호출할 에이전트를 명시}
 ```
 
-- 4개 열(항목·결과·이전/기준값·근거)은 고정이다. 역할별로 행만 추가하고 열을 바꾸지 않는다.
+- 4개 열(항목·결과·이전/기준값·근거)은 고정이다. 역할별로 행만 추가하고 열을 바꾸지 않는다. 예외: 발견·지적 목록(리뷰 보고서의 결함 표 등)은 성격상 다른 열을 쓸 수 있다 — 그 경우에도 결론·문제/다음 단계 형식은 유지한다.
 - 비교 대상이 있는 작업은 "이전/기준값" 열을 비우지 않는다. 비교 대상이 없으면 "—"로 채운다.
 - **빈칸 금지: 문서의 표·체크리스트에 빈칸을 남기지 않는다.** 해당 없으면 `해당 없음 — {사유}`라고 쓴다. 빈칸은 "확인했더니 필요 없음"과 "잊어버림"을 구별하지 못한다.
 - 확인하지 못한 항목은 통과로 세지 않고 `미검증`으로 표시한다.
@@ -84,6 +87,13 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 
 - 빌드·실행·테스트 명령이 한 번 성공하면 docs/CodingRules.md 하단 "검증된 명령어" 절에 원문 그대로 기록한다.
 - 기록된 명령이 있으면 변형하지 말고 그대로 쓴다. 변형이 필요하면 무엇을 왜 바꾸는지 한 줄 먼저 말한다.
+
+## 시크릿 관리
+
+- 실제 `.env` 파일(`.env.local` 등 변형 포함)은 에이전트가 읽기·수정·출력·복사하지 않는다. 값이 필요하면 사용자에게 요청한다.
+- 저장소에 추적·공유하는 것은 `.env.example`(플레이스홀더만)뿐이다.
+- 코드·문서·로그·보고서에 API 키·비밀번호·토큰을 적지 않는다.
+- Claude Code에서는 `.claude/hooks/block-env-access.js`가 이를 물리 차단한다. **Codex·안티그래비티에는 훅이 없으므로 이 조항이 유일한 방벽이다** — 예외 없이 지킨다.
 
 ## 막히면 (즉흥 대처 대신 지정된 행동)
 
@@ -100,8 +110,8 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 |---|---|---|
 | CLAUDE.md, AGENTS.md | 사용자 | 읽기 전용 |
 | README.md | docs | 읽기 전용 |
-| docs/PRD.md, docs/Tasks.md | planner | docs는 동기화 가능, 그 외 읽기 전용 |
-| docs/Architecture.md, docs/DECISIONS.md, docs/adr/ | architect | docs는 동기화 가능, 그 외 읽기 전용 (승인된 ADR은 불변) |
+| docs/PRD.md, docs/Tasks.md | planner | docs는 동기화 가능, 그 외 읽기 전용 (예외: 머리글 상태의 "승인" 전환은 사용자) |
+| docs/Architecture.md, docs/DECISIONS.md, docs/adr/ | architect | docs는 동기화 가능, 그 외 읽기 전용 (승인된 ADR은 불변, 머리글 상태의 "승인" 전환은 사용자) |
 | docs/CodingRules.md | 사용자 (요청 시 architect) | 검증된 명령어 절만 implementer 추가 가능 |
 | docs/GitWorkflow.md, docs/DefinitionOfDone.md | 사용자 | 읽기 전용 |
 | docs/CHANGELOG.md | docs | 읽기 전용 |
@@ -120,8 +130,8 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 | **idea-interview** | **아이디어 → 명세 대화형 인터뷰 절차, 커버리지 11항목, 추천·반대 제시 규칙, 종료 조건** | **메인 세션 (기획 착수 전 필수)** |
 | tdd-practitioner | Red-Green-Refactor 절차, 테스트 케이스 도출 기준, 부실 테스트 방지 체크리스트 | implementer, quality-assurance |
 | clean-architecture | 계층 분리, 의존성 역전, DTO 경계, 순환 참조 금지 | architect, implementer, reviewer |
-| security-audit | 시크릿·주입·인증/인가(IDOR)·입력 검증 체크리스트 | reviewer, implementer |
-| web-performance | Core Web Vitals, 렌더링 최적화, 접근성(a11y) | 웹 프로젝트의 implementer, quality-assurance |
+| security-audit | 시크릿·주입·인증/인가(IDOR)·입력 검증 체크리스트 | reviewer, implementer, 보안 요구 시 architect |
+| web-performance | Core Web Vitals, 렌더링 최적화, 접근성(a11y) | 웹 프로젝트의 implementer, quality-assurance, reviewer |
 
 설치·선택 팩은 docs/ToolPacks.md 참조.
 

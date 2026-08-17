@@ -10,7 +10,7 @@
         ]
       },
       {
-        "matcher": "Read|Edit|Write|NotebookEdit",
+        "matcher": "Read|Edit|Write|NotebookEdit|Grep",
         "hooks": [
           { "type": "command", "command": "node .claude/hooks/block-env-access.js" }
         ]

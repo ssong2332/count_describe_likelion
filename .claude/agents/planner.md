@@ -29,9 +29,9 @@ model: opus
 ## 보고 (최종 출력)
 ```
 ### 결론: {PRD/Tasks에 무엇이 추가·변경됐는가 한 줄}
-| 항목 | 결과 | 근거 |
-| 요구사항 | F-xx ~ F-yy | docs/PRD.md |
-| 작업 | T-xx ~ T-yy | docs/Tasks.md |
+| 항목 | 결과 | 이전/기준값 | 근거 |
+| 요구사항 | F-xx ~ F-yy | {기존 마지막 ID 또는 —} | docs/PRD.md |
+| 작업 | T-xx ~ T-yy | {기존 마지막 ID 또는 —} | docs/Tasks.md |
 ### Open Questions: {사용자 결정 필요 항목 — 없으면 "없음"}
 ### 승인 요청: docs/PRD.md·Tasks.md 승인 여부 결정 필요 — 승인 후 설계 단계 진행
 ```

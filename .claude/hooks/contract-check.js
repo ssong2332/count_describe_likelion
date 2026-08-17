@@ -49,7 +49,10 @@ function checkAgentRoster(findings) {
     } else if (name !== base) {
       findings.push(`C1 ${file}: frontmatter name "${name}" 이 파일명 "${base}" 과 다르다.`);
     }
-    if (agentsMd && name && !agentsMd.includes(name)) {
+    // "docs/" 경로 표기 때문에 docs 에이전트 검사가 항상 통과하는 것을 방지:
+    // 경로 접두사를 제거한 본문에서 이름을 찾는다.
+    const rosterSource = agentsMd ? agentsMd.replace(/docs\//g, " ") : null;
+    if (rosterSource && name && !rosterSource.includes(name)) {
       findings.push(`C1 AGENTS.md: 에이전트 "${name}" 이 어디에도 등재되지 않았다.`);
     }
   }
@@ -98,6 +101,7 @@ function checkOwnership(findings) {
   }
   const owners = new Map();
   for (const line of section.split("\n")) {
+    if (line.trim().startsWith("## ")) break; // 다음 절 시작 — 소유권 표 종료
     const cells = line.split("|").map((c) => c.trim());
     if (cells.length < 4 || !cells[1] || cells[1].startsWith("-") || cells[1] === "문서") continue;
     for (const doc of cells[1].split(",").map((d) => d.trim()).filter(Boolean)) {
@@ -106,7 +110,6 @@ function checkOwnership(findings) {
       }
       owners.set(doc, cells[2]);
     }
-    if (line.includes("## ")) break;
   }
 }
 

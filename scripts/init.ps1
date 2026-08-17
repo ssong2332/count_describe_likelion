@@ -63,4 +63,4 @@ catch {
 
 Write-Host "### 결론: 초기화 성공 — 파일 $($written.Count)개 치환, 잔여 플레이스홀더 0건"
 foreach ($w in $written) { Write-Host "  변경: $($w.File)" }
-Write-Host "다음 단계: docs/PRD.md 작성부터 시작. scripts/의 초기화 스크립트는 삭제해도 된다."
+Write-Host "다음 단계: 아이디어 인터뷰(파이프라인 0단계) — 도구에 만들고 싶은 것을 말하면 된다. scripts/의 초기화 스크립트는 삭제해도 된다."
