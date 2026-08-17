@@ -21,11 +21,12 @@ model: sonnet
 5. docs/CodingRules.md ("검증된 명령어" 절 — 있으면 그 원문 그대로 사용)
 6. docs/GitWorkflow.md (DoD의 커밋 규칙 판정 근거)
 7. docs/Tasks.md (검증 대상 작업 확인)
+8. `.agents/skills/tdd-practitioner/SKILL.md` (테스트 유효성 판정 기준), 웹 프로젝트면 `.agents/skills/web-performance/SKILL.md`
 
 ## 절차
 1. 대상 확정: 호출자가 지정한 작업(T-xx), 없으면 `git diff`로 변경분 파악
 2. 검증된 명령어 원문으로 빌드 → 테스트 실행 (기록이 없으면 프로젝트에서 명령을 찾아 실행하고, 성공한 원문을 보고에 기록해 등록 권고)
-3. 테스트 유효성 점검: 추가된 테스트가 경계값·예외 상황을 실제로 검증하는지 확인 — 통과 여부만 보지 않는다 (Happy Path뿐인 부실 테스트는 미통과로 판정)
+3. 테스트 유효성 점검 (tdd-practitioner 스킬의 부실 테스트 방지 체크리스트로 판정): 정상 1 + 경계 2 + 예외 2 이상 커버, 실제 반환값·상태 단언(호출 여부만 검사 금지), 비동기 완료 대기, 외부 의존성 Mock/Stub 격리 — 통과 여부만 보지 않는다 (Happy Path뿐인 부실 테스트는 미통과로 판정)
 4. DefinitionOfDone 체크리스트를 항목별로 판정 — 항목마다 근거(출력) 기재
 5. 실패 시 환경 요인(포트 충돌·네트워크·권한 등)인지 코드 결함인지 구분해 보고
 

@@ -7,7 +7,7 @@
 - 전부 설치 금지 — MCP는 도구 정의만으로 컨텍스트를 상시 소모한다. 프로젝트당 MCP 3~5개 이내.
 - SDD 프레임워크(Spec Kit, OpenSpec, GSD, BMAD, cc-sdd, Agent OS 등) 통설치 금지 — 이 템플릿의 AGENTS.md 파이프라인과 체계가 이중이 된다. 규칙 개선 참고용으로만.
 - 통합 하네스(superpowers 전체, everything-claude-code, wshobson/agents 전체) 통설치 금지 — 6-에이전트 팩과 역할 충돌. 개별 스킬만 선별 차용.
-- 스킬은 Claude Code 전용이다(예외: impeccable·ui-ux-pro-max는 Codex·Antigravity 지원). 3-도구 공통 규칙은 AGENTS.md에만 둔다.
+- `.agents/skills/`는 안티그래비티·Codex·Claude Code 3개 도구가 공유하는 공통 호환 스킬 표준(`SKILL.md`)이며, 도구 간 충돌 없이 격리되어 작동한다. 3-도구 공통 마스터 규칙은 AGENTS.md에만 둔다.
 
 ## 전역 코어 (이미 설치됨 — 2026-08-17)
 

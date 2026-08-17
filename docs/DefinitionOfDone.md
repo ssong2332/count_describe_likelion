@@ -1,6 +1,7 @@
 # DefinitionOfDone — {{PROJECT_NAME}}
 
-> 소유자: 사용자 | implementer가 리뷰/검증 단계로 넘기기 전 전부 통과해야 한다. QA가 이 체크리스트로 판정한다.
+> 소유자: 사용자 | implementer가 검증 전환 요청 전에 자가 점검하고, QA가 최종 판정한다.
+> 예외: "Tasks 검증중 상태" 항목은 implementer 자가 점검 대상이 아니다 (그 전환은 요청을 받은 planner가 수행 → QA가 확인).
 
 ## 완료 판정 체크리스트
 
@@ -13,6 +14,12 @@
 - [ ] 에러 케이스(잘못된 입력, 빈 값, 경계값)를 처리했다.
 - [ ] docs/Tasks.md에서 해당 작업이 "검증중" 상태이고 근거 열에 구현 근거가 기록돼 있다 ("완료" 전환은 QA 통과 후 planner가 한다 — 완료를 여기서 요구하면 순환).
 - [ ] 커밋이 GitWorkflow.md 규칙(브랜치·메시지)을 따랐다.
+
+### 조건부 항목 (해당 프로젝트만)
+
+- [ ] 보안 대상(인증·결제·개인정보): `.agents/skills/security-audit/SKILL.md` 체크리스트 통과 — 시크릿 하드코딩 0건, 인가(IDOR) 서버측 검증, 민감 정보 로그 미노출, 신규 의존성 출처 확인.
+- [ ] 웹 UI: `.agents/skills/web-performance/SKILL.md`의 접근성 필수 항목(alt·키보드 포커스·명도 대비·label) 통과.
+- [ ] 계층형 구조 채택: `.agents/skills/clean-architecture/SKILL.md`의 검증 체크리스트(프레임워크 객체 유입 없음, DB 코드 위치, 순환 참조 없음) 통과.
 
 ## 판정 규칙
 

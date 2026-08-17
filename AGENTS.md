@@ -33,6 +33,16 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 - 설계 수준의 결함은 설계 단계로 먼저 되돌린 뒤 구현한다.
 - 구현 착수 조건: docs/PRD.md와 docs/Architecture.md 머리글의 상태가 "승인"이어야 한다. 상태를 "승인"으로 바꾸는 것은 사용자만 한다. 승인 전이면 구현하지 말고 상태를 보고한다.
 - 작업 상태 처리 (planner만 전환 — implementer는 Tasks.md 수정 불가): ① 착수 시 planner가 "진행"으로. ② 구현이 끝나면 implementer는 구현·테스트 근거를 첨부해 **"검증 전환 요청"**을 보고한다 — 이것은 완료 보고가 아니다. planner가 이를 받아 "검증중"으로 바꾸고 근거를 기록한 뒤 리뷰·QA가 시작된다. ③ 통과 후 planner가 "완료"로 바꾼다. QA는 "검증중 + 구현 근거 기록됨"까지만 확인한다 (완료 전환을 QA 통과 조건으로 삼으면 순환이 생긴다).
+- 핸드오프 조정 주체: 각 단계 전환에서 다음 에이전트를 호출하는 것은 **메인 세션(사용자를 직접 상대하는 에이전트)**이다. 서브에이전트는 서로를 호출하지 않고, 보고서에 "다음 단계: {호출 대상 에이전트}"를 적어 메인 세션이 이어가게 한다. 아래 표대로 호출한다.
+
+| 이벤트 | 메인 세션이 호출할 대상 |
+|---|---|
+| 사용자 요청 접수 | planner |
+| PRD·Tasks 승인됨 | architect |
+| Architecture 승인됨 | planner(T-01 "진행" 전환) → implementer |
+| implementer의 "검증 전환 요청" 수령 | planner(검증중 전환) → reviewer + quality-assurance |
+| 리뷰·QA 통과 | planner(완료 전환) → docs |
+| 리뷰·QA에서 결함 보고 | implementer (설계 결함이면 architect 먼저) |
 
 ## 검증 루프 (테스트 우선)
 
@@ -40,10 +50,11 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 
 | 규칙 | 내용 |
 |---|---|
-| 고정 첫 작업 | 모든 프로젝트의 T-01은 테스트 하네스 구축: 러너 설정 + 스모크 테스트 1개 + 빌드·실행·테스트 명령을 CodingRules.md "검증된 명령어"에 등록. CI를 쓰는 프로젝트면 CI 워크플로 생성도 T-01에 포함. T-01 완료 전 기능 작업 착수 금지 |
-| 구현 루프 | 코드 작성 → 테스트 실행 → 실패 수정 → 반복. 같은 실패 2회면 3번째 반복 금지, 멈추고 원인 분석 보고 |
-| 새 기능 | 새 테스트와 함께 완료된다 — 테스트 없는 기능은 미완료 |
+| 고정 첫 작업 | 모든 프로젝트의 T-01은 테스트 하네스 구축: 러너 설정 + 스모크 테스트 1개 + 빌드·실행·테스트 명령을 CodingRules.md "검증된 명령어"에 등록. CI를 쓰는 프로젝트면 CI 워크플로 생성도 T-01에 포함. T-01 완료 전 T-02 이후 작업 착수 금지 (T-01 자신은 이 조건 없이 착수) |
+| 새 기능 | 실패하는 테스트부터 작성 → 실패 확인 → 최소 구현으로 통과 → 리팩토링 (Red-Green-Refactor). 테스트 없는 기능은 미완료 |
 | 버그 수정 | 수정 전에 실패하는 재현 테스트부터 작성 → 실패 확인 → 수정 → 통과 확인 |
+| 구현 루프 | 코드 수정 → 테스트 실행 → 실패 수정 → 반복. 같은 실패 2회면 3번째 반복 금지, 멈추고 원인 분석 보고 |
+| 테스트 품질 기준 | 케이스 도출·부실 테스트 방지 기준은 `.agents/skills/tdd-practitioner/SKILL.md`를 따른다 (정상 1 + 경계 2 + 예외 2 이상, 실제 반환값·상태 단언, 비동기 대기, 외부 의존성 격리) |
 
 ## 판단은 규칙으로
 
@@ -56,10 +67,11 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 ```
 ### 결론: {한 줄 — 됐는가/안 됐는가/얼마나}
 | 항목 | 결과 | 이전/기준값 | 근거 (파일:줄, 로그, 수치) |
-### 문제/다음 단계: {있으면}
+### 문제/다음 단계: {있으면 — 다음에 호출할 에이전트를 명시}
 ```
 
-- 비교 대상이 있는 작업은 "이전/기준값" 열을 비우지 않는다.
+- 4개 열(항목·결과·이전/기준값·근거)은 고정이다. 역할별로 행만 추가하고 열을 바꾸지 않는다.
+- 비교 대상이 있는 작업은 "이전/기준값" 열을 비우지 않는다. 비교 대상이 없으면 "—"로 채운다.
 - 보고 직전 자가 체크: 모든 주장에 근거가 있는가 / "수정했다"면 diff가 있는가 / "개선됐다"면 이전 수치와 비교했는가 / "테스트 통과"면 방금 실행한 출력이 있는가. 하나라도 '아니오'면 보고하지 말고 그 단계로 복귀.
 
 ## 명령어는 검증된 원문 재사용
@@ -87,7 +99,22 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 | docs/CodingRules.md | 사용자 (요청 시 architect) | 검증된 명령어 절만 implementer 추가 가능 |
 | docs/GitWorkflow.md, docs/DefinitionOfDone.md | 사용자 | 읽기 전용 |
 | docs/CHANGELOG.md | docs | 읽기 전용 |
+| docs/ToolPacks.md | 사용자 | 읽기 전용 (설치 팩 카탈로그) |
+| .agents/skills/ | 사용자 | 읽기 전용 (3-도구 공용 상세 가이드) |
 | 소스 코드 | implementer | 읽기 전용 |
+
+## 공용 스킬 (.agents/skills/)
+
+3개 도구(Claude Code·Codex·안티그래비티)가 공유하는 상세 가이드다. AGENTS.md는 "무엇을 지킬지"를, 스킬은 "어떻게 하는지"를 담는다. 충돌 시 AGENTS.md가 우선한다.
+
+| 스킬 | 내용 | 참조 주체 |
+|---|---|---|
+| tdd-practitioner | Red-Green-Refactor 절차, 테스트 케이스 도출 기준, 부실 테스트 방지 체크리스트 | implementer, quality-assurance |
+| clean-architecture | 계층 분리, 의존성 역전, DTO 경계, 순환 참조 금지 | architect, implementer, reviewer |
+| security-audit | 시크릿·주입·인증/인가(IDOR)·입력 검증 체크리스트 | reviewer, implementer |
+| web-performance | Core Web Vitals, 렌더링 최적화, 접근성(a11y) | 웹 프로젝트의 implementer, quality-assurance |
+
+설치·선택 팩은 docs/ToolPacks.md 참조.
 
 ## 문서 우선순위 (충돌 시 상위가 우선)
 
@@ -100,7 +127,9 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 7. docs/GitWorkflow.md
 8. docs/DefinitionOfDone.md
 9. docs/Tasks.md
-10. docs/CHANGELOG.md
+10. .agents/skills/ (상세 가이드 — 위 문서와 충돌 시 위가 우선)
+11. docs/ToolPacks.md
+12. docs/CHANGELOG.md
 
 ## Git 규칙
 

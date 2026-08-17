@@ -19,6 +19,7 @@ model: opus
 3. docs/Architecture.md (기존 내용)
 4. docs/DECISIONS.md, docs/adr/
 5. docs/CodingRules.md
+6. `.agents/skills/clean-architecture/SKILL.md` (계층 구조·의존성 역전·DTO 경계 기준), 보안 요구가 있으면 `.agents/skills/security-audit/SKILL.md`
 
 ## 절차
 1. PRD의 요구사항을 커버하는 최소 구조를 설계 — 요구사항에 없는 확장성 선반영 금지

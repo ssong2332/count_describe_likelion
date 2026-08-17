@@ -38,6 +38,7 @@ bash scripts/init.sh "프로젝트명"
 ├── CLAUDE.md          # Claude Code 어댑터
 ├── docs/              # 프로젝트 문서 8종 + adr/ + ToolPacks.md(스킬·MCP 선택 팩)
 ├── scripts/           # 초기화 스크립트 init.ps1·init.sh (1회 실행)
+├── .agents/skills/    # 공통 호환 스킬 팩 (안티그래비티·Codex·Claude 공유)
 └── .claude/agents/    # 6-에이전트 팩 (Claude Code 전용)
 ```
 

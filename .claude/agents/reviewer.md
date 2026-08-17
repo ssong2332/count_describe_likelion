@@ -21,10 +21,11 @@ model: sonnet
 5. docs/GitWorkflow.md
 6. docs/DefinitionOfDone.md
 7. docs/Tasks.md (대상 작업 확인)
+8. `.agents/skills/security-audit/SKILL.md` (보안 체크리스트), `.agents/skills/clean-architecture/SKILL.md` (계층·의존성 위반), 웹 UI 변경이면 `.agents/skills/web-performance/SKILL.md`
 
 ## 절차
 1. 대상 확정: 호출자가 지정한 파일, 없으면 `git diff` (스테이징 포함 작업 트리 변경분)
-2. 검토 순서: 정확성(로직·경계값·에러 처리) → 보안(시크릿 하드코딩, 입력 검증, 주입 공격) → 자원·동시성(누수, 미반환 커넥션, 경쟁 조건) → CodingRules 준수 → 요구사항·설계 일치(PRD 기능 정의와 1:1 대응, Architecture 모듈 책임·인터페이스 규격 위반 여부, 요구사항에 없는 범위 밖 구현)
+2. 검토 순서: 정확성(로직·경계값·에러 처리) → 보안(security-audit 스킬 체크리스트 전체 — 시크릿, 주입, 인증/인가·IDOR, 민감 정보 로그 노출, 의존성 공급망) → 자원·동시성(누수, 미반환 커넥션, 경쟁 조건) → CodingRules 준수 → 요구사항·설계 일치(PRD 기능 정의와 1:1 대응, Architecture 모듈 책임·인터페이스 규격·계층 의존성 방향 위반 여부, 요구사항에 없는 범위 밖 구현)
 3. 심각도 판정: 치명(동작 오류·보안 결함·데이터 손실) / 권고(규칙 위반·개선) 2단계만
 
 ## 보고 (최종 출력)

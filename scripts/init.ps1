@@ -15,6 +15,10 @@ if ([string]::IsNullOrWhiteSpace($ProjectName)) {
     Write-Host "### 결론: 초기화 실패 — 프로젝트명이 공백뿐이다. 변경된 파일 없음."
     exit 1
 }
+if ($ProjectName -match '[\p{C}]') {
+    Write-Host "### 결론: 초기화 실패 — 프로젝트명에 줄바꿈·제어문자를 넣을 수 없다. 변경된 파일 없음."
+    exit 1
+}
 
 $root = Split-Path -Parent $PSScriptRoot
 $today = Get-Date -Format "yyyy-MM-dd"

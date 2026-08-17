@@ -24,11 +24,12 @@ model: inherit
 5. docs/GitWorkflow.md
 6. docs/DefinitionOfDone.md
 7. docs/Tasks.md (담당 작업 ID 확인)
+8. `.agents/skills/tdd-practitioner/SKILL.md` (테스트 작성 절차·기준), `.agents/skills/clean-architecture/SKILL.md` (계층·DTO 경계), `.agents/skills/security-audit/SKILL.md` (입력 검증·시크릿), 웹 UI 작업이면 `.agents/skills/web-performance/SKILL.md`
 
 ## 절차
 1. PRD·Architecture 머리글의 상태가 "승인"인지 확인 (아니면 중단·보고). 담당 작업이 T-01이면 Architecture "테스트 전략" 절을 근거로 바로 착수하고, T-02 이후면 Tasks.md에서 T-01이 근거와 함께 완료인지 추가 확인 (아니면 중단·보고). 담당 작업(T-xx)의 요구사항·설계·선행 작업을 확인하고, 없으면 구현하지 말고 보고
 2. 주변 코드의 스타일·구조를 따라 구현
-3. 구현 루프: 코드 작성 → 테스트 실행 → 실패 수정 → 반복 (같은 실패 2회면 중단·원인 보고). 새 기능에는 테스트 추가(경계값·에러 케이스 포함), 버그 수정은 실패하는 재현 테스트부터 작성
+3. 구현 루프 (Red-Green-Refactor): 새 기능·버그 수정 모두 실패하는 테스트부터 작성 → 실패 확인 → 최소 구현으로 통과 → 리팩토링. 케이스 도출과 부실 테스트 방지는 tdd-practitioner 스킬 기준을 따른다 (같은 실패 2회면 중단·원인 보고)
 4. DefinitionOfDone 체크리스트를 스스로 점검 — Tasks "검증중" 항목은 제외한다 (그 전환은 이 보고를 받은 planner가 수행하고 QA가 확인). 나머지 미통과 항목이 있으면 검증 전환 요청 금지
 5. 구현·테스트 근거를 첨부해 planner에게 "검증 전환 요청"을 보고한다 — 이것은 완료 보고가 아니다. planner가 Tasks를 "검증중"으로 갱신한 뒤 reviewer·QA가 시작된다
 
