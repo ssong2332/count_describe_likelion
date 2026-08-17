@@ -36,10 +36,11 @@ bash scripts/init.sh "프로젝트명"
 {{PROJECT_NAME}}/
 ├── AGENTS.md          # 마스터 규칙 (단일 원본)
 ├── CLAUDE.md          # Claude Code 어댑터
-├── docs/              # 프로젝트 문서 8종 + adr/ + ToolPacks.md(스킬·MCP 선택 팩)
+├── docs/              # 프로젝트 문서 + ToolPacks.md(스킬·MCP 팩) + KitFeedback.md(템플릿 개선 대기열)
 ├── scripts/           # 초기화 스크립트 init.ps1·init.sh (1회 실행)
 ├── .agents/skills/    # 공통 호환 스킬 팩 (안티그래비티·Codex·Claude 공유)
-└── .claude/agents/    # 6-에이전트 팩 (Claude Code 전용)
+├── .claude/agents/    # 6-에이전트 팩 (Claude Code 전용)
+└── .claude/hooks/     # 강제 훅 3종 + 정합성 검사 (Claude Code 전용)
 ```
 
 ## 개발 파이프라인
@@ -47,6 +48,10 @@ bash scripts/init.sh "프로젝트명"
 아이디어 인터뷰 → 기획 → 설계 → 구현 → 리뷰/검증 → 문서화. 단계별 산출물과 게이트는 [AGENTS.md](AGENTS.md) 참조.
 
 인터뷰는 아이디어를 받아 적는 단계가 아니라 **같이 설계하는 대화**다: 개인/팀·언어·배포·기능 범위 등 빈칸을 질문으로 채우고, 선택지마다 추천 방향과 반대 방향을 함께 제시하며, 사용자가 "완성"을 선언할 때까지 계속된다. 절차는 [.agents/skills/idea-interview/SKILL.md](.agents/skills/idea-interview/SKILL.md).
+
+## 이 킷 자체의 문제를 발견하면
+
+규칙 때문에 막히거나 우회했다면 **여기서 규칙을 고치지 말고** [docs/KitFeedback.md](docs/KitFeedback.md)에 행을 추가한다. 나중에 템플릿 리포에서 그 표를 읽고 원본을 고치면 다음 프로젝트부터 반영된다.
 
 ## 실행/빌드/테스트
 
