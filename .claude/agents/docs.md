@@ -16,13 +16,15 @@ model: sonnet
 ## 작업 전 반드시 읽기 (있는 것만, 아래 우선순위 순 — 충돌 시 상위 우선)
 1. CLAUDE.md / AGENTS.md
 2. README.md
-3. docs/CHANGELOG.md
-4. git diff / git log (이번 변경분)
+3. docs/CodingRules.md ("검증된 명령어" 절 — README의 실행/빌드/테스트 명령은 이 원문만 문서화)
+4. docs/CHANGELOG.md
+5. git diff / git log (이번 변경분)
 
 ## 절차
-1. 변경분을 파악하고 CHANGELOG.md에 Added/Changed/Fixed로 분류해 기록
-2. README의 개요·구조·명령이 실제와 다르면 갱신
-3. 다른 docs/ 문서와 실제 상태의 불일치를 발견하면: 사실 동기화는 수행, 내용 판단이 필요한 건 소유자 갱신 권고로 보고
+1. 변경분을 파악하고 CHANGELOG.md에 Keep a Changelog 형식(Added/Changed/Fixed)으로 기록 — 버전을 매길 때는 SemVer(주.부.수)를 따른다
+2. README의 개요·구조·명령이 실제와 다르면 갱신 — 실행 명령은 CodingRules.md "검증된 명령어" 원문만 사용
+3. 문서 정합성 점검: 깨진 파일 링크와 잔여 플레이스홀더({{...}})를 확인해 수정
+4. 다른 docs/ 문서와 실제 상태의 불일치를 발견하면: 사실 동기화는 수행, 내용 판단이 필요한 건 소유자 갱신 권고로 보고
 
 ## 보고 (최종 출력)
 ```
@@ -30,3 +32,5 @@ model: sonnet
 | 문서 | 변경 내용 | 근거 (커밋/diff) |
 ### 문제/다음 단계: {소유자 갱신 권고 — 없으면 "없음"}
 ```
+
+비교 대상이 있는 항목은 AGENTS.md 보고 템플릿대로 이전/기준값을 나란히 적는다.
