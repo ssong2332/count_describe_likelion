@@ -200,7 +200,17 @@ if (process.argv.includes("--report")) {
   process.exit(0);
 }
 
-const WATCHED = [".claude/agents/", ".agents/skills/", "AGENTS.md", "CLAUDE.md", "README.md", "docs/"];
+const WATCHED = [
+  ".claude/agents/",
+  ".agents/skills/",
+  "AGENTS.md",
+  "CLAUDE.md",
+  "README.md",
+  "docs/",
+  ".claude/settings.json",
+  ".codex/hooks.json",
+  ".agents/hooks.json",
+];
 const { readHookInput } = require("./lib/read-hook-input");
 
 readHookInput((payload) => {

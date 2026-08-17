@@ -116,11 +116,14 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 | docs/GitWorkflow.md, docs/DefinitionOfDone.md | 사용자 | 읽기 전용 |
 | docs/CHANGELOG.md | docs | 읽기 전용 |
 | docs/ToolPacks.md | 사용자 | 읽기 전용 (설치 팩 카탈로그) |
-| docs/KitFeedback.md | 사용자 | 누구나 행 추가 가능 (기존 행 수정 금지 — 상태 열 제외) |
+| docs/KitFeedback.md | 사용자 | 행 추가는 사용자 또는 메인 세션만 (6-에이전트는 소유 문서 외 수정 금지 규칙에 따라 불가 — 보고서로 전달) — 기존 행 수정 금지(상태 열 제외) |
 | .claude/hooks/, .claude/settings.json | 사용자 | 읽기 전용 — 차단을 우회하려고 편집하는 대상이 아니다 |
 | .agents/hooks.json, scripts/agy-guard.js | 사용자 | 읽기 전용 (안티그래비티 강제 계층) — 우회 목적 편집 금지 |
 | .codex/hooks.json | 사용자 | 읽기 전용 (Codex 강제 계층) — 우회 목적 편집 금지 |
 | .agents/skills/ | 사용자 | 읽기 전용 (3-도구 공용 상세 가이드) |
+| .claude/agents/ | 사용자 | 읽기 전용 (6-에이전트 정의 — 에이전트가 실행 중 자기 정의를 고치는 대상이 아니다) |
+| scripts/init.ps1, scripts/init.sh | 사용자 | 읽기 전용 (초기화 스크립트, 1회성) |
+| .editorconfig, .gitattributes, .gitignore | 사용자 | 읽기 전용 (`.gitignore`의 `.env` 제외 항목이 시크릿 관리 절의 전제) |
 | 소스 코드 | implementer | 읽기 전용 |
 
 ## 공용 스킬 (.agents/skills/)
@@ -164,9 +167,9 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 
 | 도구 | 강제 계층 | 차단 대상 |
 |---|---|---|
-| Claude Code | `.claude/hooks/` 가드 3종 + `contract-check.js` 알림 | main 직접 커밋, 훅 우회 플래그, `.env` 접근(Grep 포함) / 규칙 문서 모순 |
-| 안티그래비티 | `.agents/hooks.json` → `scripts/agy-guard.js` | `.env` 접근, main 직접 커밋, 병합 없는 refspec push |
-| Codex | `.codex/hooks.json` → **`.claude/hooks/` 가드 3종 재사용** (payload·차단 규약이 Claude와 동일) | main 직접 커밋, 훅 우회 플래그, `.env` 접근(`apply_patch` 패치 본문 포함) |
+| Claude Code | `.claude/hooks/` 가드 3종 + `contract-check.js` 알림 | main 직접 커밋, 병합 없는 refspec push, 훅 우회 플래그, `.env` 접근(Grep 포함) / 규칙 문서 모순 |
+| 안티그래비티 | `.agents/hooks.json` → `scripts/agy-guard.js` (cwd=워크스페이스 루트 전제 — 안 맞으면 조용히 무동작, `.env` 열기로 1회 확인) | main 직접 커밋, 병합 없는 refspec push, 훅 우회 플래그, `.env` 접근 |
+| Codex | `.codex/hooks.json` → **`.claude/hooks/` 가드 3종 재사용** (payload·차단 규약이 Claude와 동일, cwd=워크스페이스 루트 전제) | main 직접 커밋, 병합 없는 refspec push, 훅 우회 플래그, `.env` 접근(`apply_patch` 패치 본문 포함) |
 
 **Codex는 최초 1회 `/hooks`로 훅 정의를 신뢰 승인해야 실행된다** — 승인 전에는 조용히 무동작이므로 새 프로젝트에서 반드시 확인한다. 또한 `sandbox_mode`·`approval_policy`는 리포에 넣어도 무시되므로(유저 레벨 `~/.codex/config.toml` 전용) 각자 설정한다.
 

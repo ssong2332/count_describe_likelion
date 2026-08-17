@@ -62,7 +62,7 @@ readHookInput((payload) => {
     if (!envRefPattern.test(command)) process.exit(0);
 
     const revealsOrOverwrites =
-      /\b(cat|type|more|less|head|tail|bat|Get-Content|code|vim|nvim|nano|notepad|cp|copy|scp|curl|tee|grep|rg|findstr|sed|awk)\b/i.test(
+      /\b(cat|type|more|less|head|tail|bat|Get-Content|gc|Select-String|code|vim|nvim|nano|notepad|cp|copy|scp|curl|tee|grep|rg|findstr|sed|awk)\b/i.test(
         command
       ) || />>?\s*['"]?\.env(?!\.example\b)/.test(command);
 

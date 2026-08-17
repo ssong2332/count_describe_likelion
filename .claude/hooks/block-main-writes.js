@@ -17,8 +17,12 @@ readHookInput((payload) => {
   if (typeof command !== "string") process.exit(0);
 
   const isCommit = /\bgit\s+commit\b/.test(command);
-  // 예: "git push origin fix/x:main", "git push origin HEAD:refs/heads/master"
-  const refspec = command.match(/\bgit\s+push\b[^\n]*\s([\w./-]+):(?:refs\/heads\/)?(main|master)\b/);
+  // 예: "git push origin fix/x:main", "git push origin HEAD:refs/heads/master",
+  //     "git push origin +fix/x:main" (강제), "git push origin 'fix/x:main'" (인용부호).
+  // dst 뒤 (?=["'\s]|$) 는 "feature:main-fix" 같은 하이픈 붙은 브랜치를 오탐하지 않기 위함.
+  const refspec = command.match(
+    /\bgit\s+push\b[^\n]*\s["'+]?([\w./-]+):(?:refs\/heads\/)?(main|master)(?=["'\s]|$)/
+  );
   if (!isCommit && !refspec) process.exit(0);
 
   const { execSync } = require("child_process");

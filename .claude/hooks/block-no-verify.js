@@ -13,6 +13,7 @@ readHookInput((payload) => {
     /\bcommit\b[^\n]*\s-n\b/, // git commit -n (--no-verify 단축형; git clean -n 등 커밋 외 -n과 구분)
     /-c\s*commit\.gpgsign=false\b/,
     /-c\s*core\.hooksPath=/,
+    /\bconfig\b[^\n]*core\.hooksPath\b/, // git config core.hooksPath <경로> (영구 설정, "=" 없음)
   ];
   const hit = skipPatterns.find((p) => p.test(command));
   if (hit) {

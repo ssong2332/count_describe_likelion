@@ -1,10 +1,13 @@
 /**
  * Antigravity PreToolUse 가드 — .claude/hooks/ 의 안티그래비티 대응물.
- * 배선은 .agents/hooks.json (cwd 비의존 해석: scripts/ 와 ../scripts/ 둘 다 시도).
+ * 배선은 .agents/hooks.json: `node scripts/agy-guard.js` (cwd=워크스페이스 루트 전제).
+ * 전제가 어긋나면 훅이 조용히 무동작한다 — 확인법은 .claude/hooks/README.md 참조.
  *
- * 강제하는 규칙 (원본은 문서, 여기는 물리 차단 계층):
+ * 강제하는 규칙 (원본은 문서, 여기는 물리 차단 계층). .claude/hooks/의 3개
+ * 가드(block-main-writes·block-no-verify·block-env-access)와 규칙을 공유하므로
+ * 어느 한쪽을 고치면 반드시 다른 쪽도 함께 고친다:
  * - AGENTS.md "시크릿 관리": 실제 .env(변형 포함) 읽기/수정/출력 차단
- * - docs/GitWorkflow.md: main/master 직접 커밋, 병합 없는 refspec push 차단
+ * - docs/GitWorkflow.md: main/master 직접 커밋, 병합 없는 refspec push, 훅 우회 플래그 차단
  *
  * 규약: stdin = {toolCall:{name,args}, ...}, stdout = {"decision":"allow"|"deny", "reason"?}
  * 오류 시 fail-open(allow) — 가드 버그가 세션을 막는 실패 모드가 더 나쁘기 때문
@@ -59,7 +62,7 @@ function main() {
           const envRefPattern = /(^|[\s"'`/\\:])\.env(?!\.example\b)(\.\w+)?(?=[\s"'`/\\:)]|$)/;
           if (envRefPattern.test(command)) {
             const revealsOrOverwrites =
-              /\b(cat|type|more|less|head|tail|bat|Get-Content|code|vim|nvim|nano|notepad|cp|copy|scp|curl|tee|grep|rg|findstr|sed|awk)\b/i.test(
+              /\b(cat|type|more|less|head|tail|bat|Get-Content|gc|Select-String|code|vim|nvim|nano|notepad|cp|copy|scp|curl|tee|grep|rg|findstr|sed|awk)\b/i.test(
                 command
               ) || />>?\s*['"]?\.env(?!\.example\b)/.test(command);
 
@@ -72,9 +75,29 @@ function main() {
             }
           }
 
-          // 2-2. main/master 브랜치 직접 커밋 검사
+          // 2-2. 훅 우회 플래그 검사 (.claude/hooks/block-no-verify.js 와 동일 패턴 집합)
+          const skipPatterns = [
+            /--no-verify\b/,
+            /--no-gpg-sign\b/,
+            /\bcommit\b[^\n]*\s-n\b/, // git commit -n (--no-verify 단축형)
+            /-c\s*commit\.gpgsign=false\b/,
+            /-c\s*core\.hooksPath=/,
+            /\bconfig\b[^\n]*core\.hooksPath\b/, // git config core.hooksPath <경로> (영구 설정)
+          ];
+          const skipHit = /\bgit\b/.test(command) && skipPatterns.find((p) => p.test(command));
+          if (skipHit) {
+            output({
+              decision: "deny",
+              reason: `[GitWorkflow] 훅/서명을 우회하는 git 플래그(${skipHit})가 차단되었습니다.`
+            });
+            return;
+          }
+
+          // 2-3. main/master 브랜치 직접 커밋 검사
           const isCommit = /\bgit\s+commit\b/.test(command);
-          const refspec = command.match(/\bgit\s+push\b[^\n]*\s([\w./-]+):(?:refs\/heads\/)?(main|master)\b/);
+          const refspec = command.match(
+            /\bgit\s+push\b[^\n]*\s["'+]?([\w./-]+):(?:refs\/heads\/)?(main|master)(?=["'\s]|$)/
+          );
 
           if (isCommit || refspec) {
             let branch = "";

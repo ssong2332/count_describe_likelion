@@ -17,14 +17,15 @@ powershell -ExecutionPolicy Bypass -File scripts/init.ps1 -ProjectName "프로�
 bash scripts/init.sh "프로젝트명"
 ```
 
-3. 아이디어를 도구(Claude Code·Codex·안티그래비티 아무거나)에 말한다 → **대화형 인터뷰**로 명세를 완성한 뒤 `docs/PRD.md`가 작성된다 (파이프라인 0~1단계)
-4. Claude Code / Codex / 안티그래비티 어느 도구로 열어도 같은 규칙(AGENTS.md)이 적용된다.
+3. **Codex를 쓸 계획이면 먼저 `/hooks`로 훅 정의를 신뢰 승인한다** — 승인 전에는 main 직접 커밋·`.env` 접근 차단이 조용히 무동작한다. 안티그래비티는 `.env` 열기를 1회 시도해 차단되는지 확인한다(자동이지만 cwd 전제가 있음).
+4. 아이디어를 도구(Claude Code·Codex·안티그래비티 아무거나)에 말한다 → **대화형 인터뷰**로 명세를 완성한 뒤 `docs/PRD.md`가 작성된다 (파이프라인 0~1단계)
+5. Claude Code / Codex / 안티그래비티 어느 도구로 열어도 같은 규칙(AGENTS.md)이 적용된다.
 
 | 도구 | 규칙 읽는 방식 | 강제 계층 활성 조건 |
 |---|---|---|
 | Claude Code | CLAUDE.md의 `@AGENTS.md` import | 자동 |
-| Codex | 루트 AGENTS.md 직접 읽음 | **최초 1회 `/hooks` 신뢰 승인 필요** |
-| 안티그래비티 (Gemini) | 루트 AGENTS.md 직접 읽음 | 자동 (`.env` 열기로 1회 확인 권장) |
+| Codex | 루트 AGENTS.md 직접 읽음 | **최초 1회 `/hooks` 신뢰 승인 필요 — 안 하면 무동작** |
+| 안티그래비티 (Gemini) | 루트 AGENTS.md 직접 읽음 | cwd=워크스페이스 루트 전제 — `.env` 차단 1회 확인 필수 |
 
 ## 프로젝트 개요
 
@@ -37,7 +38,7 @@ bash scripts/init.sh "프로젝트명"
 ├── AGENTS.md          # 마스터 규칙 (단일 원본)
 ├── CLAUDE.md          # Claude Code 어댑터
 ├── docs/              # 프로젝트 문서 + ToolPacks.md(스킬·MCP 팩) + KitFeedback.md(템플릿 개선 대기열)
-├── scripts/           # 초기화 스크립트 init.ps1·init.sh (1회 실행)
+├── scripts/           # 초기화 스크립트 init.ps1·init.sh(1회 실행) + agy-guard.js(안티그래비티 가드, 상주)
 ├── .agents/skills/    # 공통 호환 스킬 팩 (안티그래비티·Codex·Claude 공유)
 ├── .claude/agents/    # 6-에이전트 팩 (Claude Code 전용)
 ├── .claude/hooks/     # 강제 가드 3종 + 정합성 검사 (Claude Code·Codex 공유)
