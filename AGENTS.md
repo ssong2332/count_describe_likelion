@@ -93,7 +93,7 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 - 실제 `.env` 파일(`.env.local` 등 변형 포함)은 에이전트가 읽기·수정·출력·복사하지 않는다. 값이 필요하면 사용자에게 요청한다.
 - 저장소에 추적·공유하는 것은 `.env.example`(플레이스홀더만)뿐이다.
 - 코드·문서·로그·보고서에 API 키·비밀번호·토큰을 적지 않는다.
-- Claude Code에서는 `.claude/hooks/block-env-access.js`가 이를 물리 차단한다. **Codex·안티그래비티에는 훅이 없으므로 이 조항이 유일한 방벽이다** — 예외 없이 지킨다.
+- Claude Code(`.claude/hooks/block-env-access.js`)와 안티그래비티(`scripts/agy-guard.js`)가 이를 물리 차단한다. **Codex에는 아직 강제 계층이 없으므로 이 조항이 유일한 방벽이다** — 예외 없이 지킨다.
 
 ## 막히면 (즉흥 대처 대신 지정된 행동)
 
@@ -118,6 +118,7 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 | docs/ToolPacks.md | 사용자 | 읽기 전용 (설치 팩 카탈로그) |
 | docs/KitFeedback.md | 사용자 | 누구나 행 추가 가능 (기존 행 수정 금지 — 상태 열 제외) |
 | .claude/hooks/, .claude/settings.json | 사용자 | 읽기 전용 — 차단을 우회하려고 편집하는 대상이 아니다 |
+| .agents/hooks.json, scripts/agy-guard.js | 사용자 | 읽기 전용 (안티그래비티 강제 계층) — 우회 목적 편집 금지 |
 | .agents/skills/ | 사용자 | 읽기 전용 (3-도구 공용 상세 가이드) |
 | 소스 코드 | implementer | 읽기 전용 |
 
@@ -156,9 +157,17 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 
 이 킷의 규칙·문서·스크립트 때문에 막히거나 우회한 일이 생기면 **현재 프로젝트의 규칙 파일을 고치지 말고** docs/KitFeedback.md에 행을 추가한다. 프로젝트에서 고친 규칙은 그 프로젝트에서만 살고 다음 프로젝트에서 같은 문제가 재발한다. 판정 기준과 반영 절차는 그 문서에 있다.
 
-## 강제 장치 (Claude Code 한정)
+## 강제 장치 (도구별)
 
-`.claude/hooks/`의 가드 3종이 main 직접 커밋·훅 우회 플래그·`.env` 접근을 물리적으로 차단하고, `contract-check.js`가 규칙 문서 간 모순을 알린다. **Codex·안티그래비티에는 훅 체계가 없으므로 이 규칙들은 전부 위 문서 조항으로도 존재한다** — 훅은 Claude에서의 추가 보강이지 규칙의 원본이 아니다. 상세는 `.claude/hooks/README.md`.
+규칙의 원본은 언제나 이 문서다. 훅은 도구가 지원할 때 추가로 물리 차단하는 계층이지 규칙의 출처가 아니다.
+
+| 도구 | 강제 계층 | 차단 대상 |
+|---|---|---|
+| Claude Code | `.claude/hooks/` 가드 3종 + `contract-check.js` 알림 | main 직접 커밋, 훅 우회 플래그, `.env` 접근(Grep 포함) / 규칙 문서 모순 |
+| 안티그래비티 | `.agents/hooks.json` → `scripts/agy-guard.js` | `.env` 접근, main 직접 커밋, 병합 없는 refspec push |
+| Codex | **미구성** (`.codex/hooks.json` PreToolUse 훅을 지원하나 이 템플릿에는 아직 없음 — 도입 시 사용자가 `/hooks`로 1회 신뢰 승인 필요) | (현재 없음) |
+
+Codex에는 아직 강제 계층이 없으므로, 위 규칙들을 문서에서 지우면 그 도구에서는 아무 보호도 남지 않는다. 상세는 `.claude/hooks/README.md`.
 
 ## Git 규칙
 

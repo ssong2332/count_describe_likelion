@@ -146,6 +146,31 @@ function checkPlaceholders(findings) {
   walk(ROOT);
 }
 
+// C6: 훅 설정이 가리키는 스크립트가 실재하는가
+// (경로가 틀리면 훅이 조용히 무동작 = 보호가 사라진 줄 모르는 최악의 실패 모드)
+function checkHookWiring(findings) {
+  const claudeSettings = read(path.join(ROOT, ".claude", "settings.json"));
+  if (claudeSettings) {
+    for (const m of claudeSettings.matchAll(/node\s+([.\w/\\-]+\.js)/g)) {
+      if (!fs.existsSync(path.join(ROOT, m[1]))) {
+        findings.push(`C6 .claude/settings.json: 훅 스크립트 "${m[1]}" 이 없다.`);
+      }
+    }
+  }
+  const agyHooks = read(path.join(ROOT, ".agents", "hooks.json"));
+  if (agyHooks) {
+    // command 안에서 참조하는 .js 경로를 모두 뽑아 하나라도 실재하는지 확인
+    // (경로가 틀려도 훅은 조용히 통과하므로 기계 검사가 유일한 탐지 수단)
+    const refs = [...agyHooks.matchAll(/([\w.][\w./\\-]*\.js)\b/g)].map((m) => m[1]);
+    if (refs.length) {
+      const anyExists = refs.some((r) => fs.existsSync(path.join(ROOT, r.replace(/^\.\.[/\\]/, ""))));
+      if (!anyExists) {
+        findings.push(`C6 .agents/hooks.json: 참조 스크립트를 찾을 수 없다 (${refs.join(", ")}).`);
+      }
+    }
+  }
+}
+
 function runChecks() {
   const findings = [];
   try {
@@ -154,6 +179,7 @@ function runChecks() {
     checkSkillRoster(findings);
     checkOwnership(findings);
     checkPlaceholders(findings);
+    checkHookWiring(findings);
   } catch (e) {
     return [`검사 중 오류(fail-open): ${e.message}`];
   }
