@@ -24,7 +24,8 @@ __pycache__/
 venv/
 .ipynb_checkpoints/
 
-# 환경 변수·비밀
+# 환경 변수·비밀 (예시 파일은 추적)
 .env
 .env.*
+!.env.example
 *.local

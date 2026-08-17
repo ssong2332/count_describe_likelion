@@ -1,6 +1,7 @@
 # Architecture — {{PROJECT_NAME}}
 
 > 소유자: architect | 상태: 초안 | 최종 수정: {{DATE}}
+> 상태는 초안/승인 두 가지. "승인"으로 바꾸는 것은 사용자만 한다 — 승인 전 구현 착수 금지 (AGENTS.md 파이프라인 규칙).
 
 ## 기술 스택
 
