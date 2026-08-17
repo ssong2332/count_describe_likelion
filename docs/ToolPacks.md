@@ -28,6 +28,7 @@
 
 | 항목 | 설치 |
 |---|---|
+| impeccable 제품 컨텍스트 | 프로젝트 루트에서 `/impeccable init` 1회 실행 → 인터뷰 후 PRODUCT.md 생성 (스킬 자체는 전역 설치됨. 템플릿에서 실행 금지 — 프로젝트별 문서다) |
 | ui-ux-pro-max (디자인 시스템 생성) | 프로젝트 루트에서 `uipro init --ai claude` (codex/antigravity도 지원) |
 | lighthouse-mcp (성능) | `claude mcp add -s project lighthouse -- npx lighthouse-mcp` |
 | Axe MCP (접근성, Deque 공식) | Docker `dequesystems/axe-mcp-server` |
