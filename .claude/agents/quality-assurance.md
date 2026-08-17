@@ -16,10 +16,11 @@ model: sonnet
 ## 작업 전 반드시 읽기 (있는 것만, 아래 우선순위 순 — 충돌 시 상위 우선)
 1. CLAUDE.md / AGENTS.md
 2. docs/PRD.md (DoD의 "요구사항 1:1 대응" 판정 근거)
-3. docs/DefinitionOfDone.md
-4. docs/CodingRules.md ("검증된 명령어" 절 — 있으면 그 원문 그대로 사용)
-5. docs/GitWorkflow.md (DoD의 커밋 규칙 판정 근거)
-6. docs/Tasks.md (검증 대상 작업 확인)
+3. docs/Architecture.md "테스트 전략" 절 (설계된 프레임워크·커버 범위대로 검증했는지 판정 근거)
+4. docs/DefinitionOfDone.md
+5. docs/CodingRules.md ("검증된 명령어" 절 — 있으면 그 원문 그대로 사용)
+6. docs/GitWorkflow.md (DoD의 커밋 규칙 판정 근거)
+7. docs/Tasks.md (검증 대상 작업 확인)
 
 ## 절차
 1. 대상 확정: 호출자가 지정한 작업(T-xx), 없으면 `git diff`로 변경분 파악

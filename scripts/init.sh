@@ -49,17 +49,32 @@ if [ "${#bad[@]}" -gt 0 ]; then
     exit 1
 fi
 
-# 3단계: 일괄 반영
+# 3단계: 일괄 반영 — 교체 실패 시 이미 바꾼 파일을 백업에서 원복
 changed=0
+backups=()
+rollback() {
+    for b in "${backups[@]:-}"; do
+        if [ -n "$b" ]; then mv -f "$b" "${b%.init-bak}"; fi
+    done
+}
 for f in "${targets[@]}"; do
     tmp="$f.init-tmp"
-    if ! cmp -s "$f" "$tmp"; then
-        mv "$tmp" "$f"
-        echo "  변경: $f"
-        changed=$((changed + 1))
-    else
+    if cmp -s "$f" "$tmp"; then
         rm -f "$tmp"
+        continue
     fi
+    if ! cp -p "$f" "$f.init-bak" || ! mv -f "$tmp" "$f"; then
+        rm -f "$f.init-bak"
+        rollback
+        echo "### 결론: 초기화 실패 — 반영 중 오류가 나서 이미 변경한 ${changed}개 파일을 원복했다. 변경된 파일 없음."
+        exit 1
+    fi
+    backups+=("$f.init-bak")
+    echo "  변경: $f"
+    changed=$((changed + 1))
+done
+for b in "${backups[@]:-}"; do
+    if [ -n "$b" ]; then rm -f "$b"; fi
 done
 tmps=()
 
