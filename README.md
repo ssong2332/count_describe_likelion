@@ -17,7 +17,7 @@ powershell -ExecutionPolicy Bypass -File scripts/init.ps1 -ProjectName "프로�
 bash scripts/init.sh "프로젝트명"
 ```
 
-3. `docs/PRD.md` 작성부터 시작 (파이프라인 1단계)
+3. 아이디어를 도구(Claude Code·Codex·안티그래비티 아무거나)에 말한다 → **대화형 인터뷰**로 명세를 완성한 뒤 `docs/PRD.md`가 작성된다 (파이프라인 0~1단계)
 4. Claude Code / Codex / 안티그래비티 어느 도구로 열어도 같은 규칙(AGENTS.md)이 적용된다.
 
 | 도구 | 규칙 읽는 방식 |
@@ -44,7 +44,9 @@ bash scripts/init.sh "프로젝트명"
 
 ## 개발 파이프라인
 
-기획 → 설계 → 구현 → 리뷰/검증 → 문서화. 단계별 산출물과 게이트는 [AGENTS.md](AGENTS.md) 참조.
+아이디어 인터뷰 → 기획 → 설계 → 구현 → 리뷰/검증 → 문서화. 단계별 산출물과 게이트는 [AGENTS.md](AGENTS.md) 참조.
+
+인터뷰는 아이디어를 받아 적는 단계가 아니라 **같이 설계하는 대화**다: 개인/팀·언어·배포·기능 범위 등 빈칸을 질문으로 채우고, 선택지마다 추천 방향과 반대 방향을 함께 제시하며, 사용자가 "완성"을 선언할 때까지 계속된다. 절차는 [.agents/skills/idea-interview/SKILL.md](.agents/skills/idea-interview/SKILL.md).
 
 ## 실행/빌드/테스트
 

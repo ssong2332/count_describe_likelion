@@ -16,12 +16,13 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 ## 개발 파이프라인
 
 ```
-기획 → [사용자 승인] → 설계 → [사용자 승인] → 구현
+아이디어 인터뷰 → 기획 → [사용자 승인] → 설계 → [사용자 승인] → 구현
      → 리뷰 / 검증 → (수정 필요 시: 구현으로 복귀) → 문서화
 ```
 
 | 단계 | 산출물 | 통과 게이트 |
 |---|---|---|
+| 아이디어 인터뷰 | 명세 요약 (커버리지 11항목) | 사용자가 "완성" 선언 |
 | 기획 | docs/PRD.md, docs/Tasks.md | 사용자 승인 |
 | 설계 | docs/Architecture.md, docs/DECISIONS.md, docs/adr/ | 사용자 승인 |
 | 구현 | 소스 코드 | docs/DefinitionOfDone.md 체크리스트 전부 통과 |
@@ -29,6 +30,7 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 | 검증 | 테스트 보고서 (실행 출력 포함) | 정의된 테스트 전부 실행·통과 |
 | 문서화 | README.md, docs/CHANGELOG.md 갱신 | 이번 변경분 반영 완료 |
 
+- **기획 착수 조건: PRD를 쓰기 전에 `.agents/skills/idea-interview/SKILL.md` 절차로 대화형 인터뷰를 먼저 수행한다. 아이디어를 아무리 상세히 받았어도 커버리지 표의 빈칸(개인/팀·언어·배포·기능 범위 등)은 질문으로 채우고, 모든 선택지에 추천 방향과 반대 방향을 함께 제시하며, 사용자가 완성을 선언할 때까지 계속한다.** 인터뷰는 사용자와 직접 대화하는 세션이 수행하며 서브에이전트에 위임하지 않는다 (서브에이전트는 질문 후 대기 불가).
 - 리뷰·검증에서 발견된 문제는 보고서와 함께 구현 단계로 되돌린다.
 - 설계 수준의 결함은 설계 단계로 먼저 되돌린 뒤 구현한다.
 - 구현 착수 조건: docs/PRD.md와 docs/Architecture.md 머리글의 상태가 "승인"이어야 한다. 상태를 "승인"으로 바꾸는 것은 사용자만 한다. 승인 전이면 구현하지 말고 상태를 보고한다.
@@ -37,7 +39,8 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 
 | 이벤트 | 메인 세션이 호출할 대상 |
 |---|---|
-| 사용자 요청 접수 | planner |
+| 새 프로젝트·새 기능 아이디어 접수 | (호출 없음) 메인 세션이 직접 아이디어 인터뷰 수행 |
+| 인터뷰 완료 (사용자가 완성 선언) | planner — 명세 요약을 입력으로 전달 |
 | PRD·Tasks 승인됨 | architect |
 | Architecture 승인됨 | planner(T-01 "진행" 전환) → implementer |
 | implementer의 "검증 전환 요청" 수령 | planner(검증중 전환) → reviewer + quality-assurance |
@@ -109,6 +112,7 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 
 | 스킬 | 내용 | 참조 주체 |
 |---|---|---|
+| **idea-interview** | **아이디어 → 명세 대화형 인터뷰 절차, 커버리지 11항목, 추천·반대 제시 규칙, 종료 조건** | **메인 세션 (기획 착수 전 필수)** |
 | tdd-practitioner | Red-Green-Refactor 절차, 테스트 케이스 도출 기준, 부실 테스트 방지 체크리스트 | implementer, quality-assurance |
 | clean-architecture | 계층 분리, 의존성 역전, DTO 경계, 순환 참조 금지 | architect, implementer, reviewer |
 | security-audit | 시크릿·주입·인증/인가(IDOR)·입력 검증 체크리스트 | reviewer, implementer |
