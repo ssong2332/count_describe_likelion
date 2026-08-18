@@ -124,6 +124,7 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 | .claude/agents/ | 사용자 | 읽기 전용 (6-에이전트 정의 — 에이전트가 실행 중 자기 정의를 고치는 대상이 아니다) |
 | scripts/init.ps1, scripts/init.sh | 사용자 | 읽기 전용 (초기화 스크립트, 1회성) |
 | .editorconfig, .gitattributes, .gitignore | 사용자 | 읽기 전용 (`.gitignore`의 `.env` 제외 항목이 시크릿 관리 절의 전제) |
+| .env.example | 사용자 (요청 시 architect·implementer가 새 변수 추가) | 실제 값 금지, 플레이스홀더만. 새 환경 변수를 도입하면 이 파일도 함께 갱신 |
 | 소스 코드 | implementer | 읽기 전용 |
 
 ## 공용 스킬 (.agents/skills/)
