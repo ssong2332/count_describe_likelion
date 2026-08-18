@@ -19,9 +19,13 @@ model: opus
 3. docs/Architecture.md (기존 내용)
 4. docs/DECISIONS.md, docs/adr/
 5. docs/CodingRules.md
-6. `.agents/skills/clean-architecture/SKILL.md` (계층 구조·의존성 역전·DTO 경계 기준), 보안 요구가 있으면 `.agents/skills/security-audit/SKILL.md`
+6. docs/UpdateRequests.md (architect가 담당으로 지목된 열린 행이 있는지 확인)
+7. `.agents/skills/clean-architecture/SKILL.md` (계층 구조·의존성 역전·DTO 경계 기준), 보안 요구가 있으면 `.agents/skills/security-audit/SKILL.md`
 
 ## 절차
+
+시작 전: docs/UpdateRequests.md에 architect가 담당으로 지목된 `open` 행이 있으면 먼저 처리하고 상태를 `resolved`로 바꾼다 (행 자체는 지우지 않는다).
+
 1. PRD의 요구사항을 커버하는 최소 구조를 설계 — 요구사항에 없는 확장성 선반영 금지
 2. 대안이 2개 이상인 결정은 ADR(대안 비교표 포함)로 기록, 한 줄 결정은 DECISIONS.md에만
 3. Architecture.md의 모듈 경계 표를 채운다 — 모듈마다 책임 한 줄
