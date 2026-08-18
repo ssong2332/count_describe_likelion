@@ -10,7 +10,11 @@ readHookInput((payload) => {
   const skipPatterns = [
     /--no-verify\b/,
     /--no-gpg-sign\b/,
-    /\bcommit\b[^\n]*\s-n\b/, // git commit -n (--no-verify 단축형; git clean -n 등 커밋 외 -n과 구분)
+    // git commit -n / -nm / -mn 등: -n은 --no-verify 단축형이고 짧은 플래그는
+    // 묶어 쓸 수 있다(-nm = -n -m). commit의 실제 짧은 플래그(aceCimnopqsSuvF)로만
+    // 구성된 묶음에 n이 포함되면 차단 — 2026-08-18 회귀 스위트 작성 중 "-nm"이
+    // 기존 `\s-n\b`(정확히 -n만) 패턴을 통과하는 것을 발견해 넓혔다.
+    /\bcommit\b[^\n]*\s-[aceCimnopqsSuvF]*n[aceCimnopqsSuvF]*\b/,
     /-c\s*commit\.gpgsign=false\b/,
     /-c\s*core\.hooksPath=/,
     /\bconfig\b[^\n]*core\.hooksPath\b/, // git config core.hooksPath <경로> (영구 설정, "=" 없음)

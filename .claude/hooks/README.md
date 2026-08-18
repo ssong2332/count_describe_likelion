@@ -52,7 +52,10 @@
 
 ```bash
 node .claude/hooks/contract-check.js --report
+node .claude/hooks/test-guards.js
 ```
+
+`test-guards.js`는 가드 3종(block-main-writes·block-no-verify·block-env-access)의 회귀 테스트다. 아무 훅 이벤트에도 걸려 있지 않다 — 가드 패턴을 고칠 때마다 손으로 돈다. `.claude/hooks/package.json`(프로젝트 루트 `package.json`과는 별개, Node 버전만 명시)에 `npm --prefix .claude/hooks test`로도 같은 걸 실행할 수 있게 등록돼 있다.
 
 ## 검사 항목 (contract-check)
 
