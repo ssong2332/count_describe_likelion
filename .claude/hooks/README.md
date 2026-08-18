@@ -38,7 +38,7 @@
 
 `block-env-access.js`는 Codex의 `apply_patch`도 처리한다 — 그 도구는 파일 경로가 아니라 **패치 본문**을 `tool_input.command`에 담으므로 `*** Add/Update/Delete File:` 줄에서 대상 경로를 파싱한다.
 
-**근거 기록 (matcher·인자명 출처)**: `.codex/hooks.json`의 matcher(`Bash|shell|local_shell`, `apply_patch|Read|Edit|Write`)와 `.agents/hooks.json`의 파일 인자명(`AbsolutePath`·`TargetFile`·`SearchPath`·`DirectoryPath`)은 Codex `codex-cli 0.148.0-alpha.9` 실측(로컬 `~/.codex/hooks.json`의 impeccable 훅 배선 관찰)과 [learn.chatgpt.com/docs/hooks](https://learn.chatgpt.com/docs/hooks)·[antigravity.google/docs/ide/hooks](https://antigravity.google/docs/ide/hooks)를 근거로 정했다. 도구 버전이 바뀌어 이름이 달라지면 훅은 조용히 무동작하므로, 새 버전으로 넘어갈 때는 위 cwd 전제 확인과 같은 방식(`.env` 열기 1회 시도)으로 재검증한다.
+**근거 기록 (matcher·인자명 출처)**: `.codex/hooks.json`의 matcher(`Bash|shell|local_shell`, `apply_patch|Read|Edit|Write|Grep` — 2026-08-18 재검토에서 두 번째 matcher에 `Grep`이 빠져 있던 것을 발견해 추가, Claude Code 쪽 matcher와 대칭 확보)와 `.agents/hooks.json`의 파일 인자명(`AbsolutePath`·`TargetFile`·`SearchPath`·`DirectoryPath`)은 Codex `codex-cli 0.148.0-alpha.9` 실측(로컬 `~/.codex/hooks.json`의 impeccable 훅 배선 관찰)과 [learn.chatgpt.com/docs/hooks](https://learn.chatgpt.com/docs/hooks)·[antigravity.google/docs/ide/hooks](https://antigravity.google/docs/ide/hooks)를 근거로 정했다. 도구 버전이 바뀌어 이름이 달라지면 훅은 조용히 무동작하므로, 새 버전으로 넘어갈 때는 위 cwd 전제 확인과 같은 방식(`.env` 열기 1회 시도)으로 재검증한다.
 
 ## 원칙
 
@@ -67,4 +67,4 @@ node .claude/hooks/contract-check.js --report
 
 **C6의 한계** (기계 검사가 못 잡는 것): ① 파일은 실재하지만 cwd 전제가 어긋나 무동작하는 경우(위 cwd 전제 참조) ② `matcher` 문자열의 오타(도구명이 틀려도 스크립트 경로 검사는 통과) ③ 세 배선 간 강제 규칙 세트의 비대칭(예: 한 도구에만 없는 규칙) ④ Claude Code에서만 자동 실행되므로 Codex·안티그래비티에서 한 편집은 다음에 Claude Code로 돌아올 때까지 미검사 — `--report`로 수동 실행해 보완한다.
 
-사람이 판단해야 하는 것(규칙끼리의 의미 충돌, 게이트가 실제로 판정을 바꾸는지 등)은 기계가 못 잡는다. 그런 결함은 `docs/KitFeedback.md`에 기록한다.
+사람이 판단해야 하는 것(규칙끼리의 의미 충돌, 게이트가 실제로 판정을 바꾸는지 등)은 기계가 못 잡는다. AGENTS.md·CLAUDE.md·`.claude/agents/*.md`·규칙 담은 `docs/*.md`를 고친 뒤에는 `docs/HarnessAudit.md`를 손으로 돈다. 이 킷 자체의 구조적 문제(규칙 개선이 필요한 경우)는 `docs/KitFeedback.md`에 기록한다 — 둘은 목적이 다르다: HarnessAudit은 "지금 편집이 안전한가"를 커밋 전에 확인하는 체크리스트고, KitFeedback은 "이 킷의 규칙 자체가 다음 프로젝트에서도 고쳐져야 하는가"를 기록하는 별도 문서다.
