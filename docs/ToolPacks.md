@@ -20,11 +20,24 @@
 | Figma MCP | MCP (디자인→코드) | 연결됨 (claude.ai 커넥터) |
 | claude-mem | 플러그인 (세션 메모리 지속성) | 설치됨 (`claude-mem install` 완료) |
 | ponytail | 플러그인 (YAGNI·최소 코드 강제) | 설치됨 (full 모드) |
-| 스킬 7종 | frontend-design, theme-factory, brainstorming, taste-skill, animate, impeccable(+Codex·.agents), ui-ux-pro-max(CLI만, 프로젝트별 `uipro init`) | `~/.claude/skills` 설치됨 |
+| 스킬 7종 | frontend-design, theme-factory, brainstorming, taste-skill, animate, impeccable, ui-ux-pro-max(CLI만, 프로젝트별 `uipro init`) | `~/.claude/skills` 설치됨. impeccable만 `~/.agents/skills/`에도 설치돼 안티그래비티에서도 잡힌다. **`~/.codex/skills/`는 비어 있다 (2026-08-18 실측) — Codex에서는 이 스킬들이 전부 없는 상태다** |
+
+## 에이전트 대신 스킬로 메우는 역할
+
+이 킷은 6-에이전트를 유지하고, 다른 킷이 별도 에이전트로 둔 두 역할은 문서 확장 + 스킬로 대신한다. 에이전트를 늘리면 문서 소유권·핸드오프 표·contract-check가 전부 따라 커지는데, 아래 두 역할은 그 비용을 치를 근거(이 킷에서 실제로 터진 사고)가 아직 없다.
+
+| 다른 킷의 에이전트 | 이 킷의 대체 | 한계 (알고 쓰는 것) |
+|---|---|---|
+| ux-design (화면 설계 전담) | ① docs/PRD.md "화면" 절(무엇이 보이고 어떤 상태인가) ② architect 절차의 화면 메커니즘 항목(라우팅·상태 소유·컴포넌트 경계) ③ 시각 완성도는 아래 웹 프론트엔드 팩 스킬 | 스킬은 승인 게이트 밖이다 — 스킬이 만든 디자인은 PRD·Architecture 승인을 거치지 않는다. 화면 수가 많거나 디자인 자체가 산출물인 프로젝트면 이 방식의 한계가 먼저 온다 |
+| debugger (원인 진단 전담) | AGENTS.md 검증 루프 "같은 실패 2회면 3번째 반복 금지, 멈추고 원인 분석 보고" + implementer 구현 루프의 같은 조항 + QA 금지 조항 | "멈추고 보고"까지는 강제되지만 그 원인 분석을 **누가** 하는지는 정해져 있지 않다 — 지금은 같은 implementer가 수행하므로 진단과 수정의 관점 분리가 약하다. 실제로 이 때문에 잘못 고친 사례가 나오면 그때 에이전트 분리를 재검토한다 |
+
+`~/.claude/skills/analyze-only`(진단 전용 읽기 모드)는 debugger 역할과 개념이 가깝지만 **이 킷에 편입하지 않는다** — 심각도를 4단계(치명/높음/중간/낮음)로 매겨 AGENTS.md "심각도 판정 기준"의 2단계(치명/권고)와 충돌하고, 내용이 특정 개인 프로젝트(NYPC 봇) 기준으로 쓰여 있다. 필요하면 그 세션에서 개인 스킬로 직접 호출하되, 이 킷의 리뷰·QA 판정에는 쓰지 않는다.
 
 ## 프로젝트별 선택 팩 (해당할 때만 설치)
 
 ### 웹 프론트엔드 팩
+
+**파이프라인 위치: 구현 단계에서만 쓴다.** 화면이 무엇이고 어떤 상태를 갖는지는 이미 PRD "화면" 절과 Architecture에서 승인된 상태여야 한다 — 이 팩의 스킬들은 그것을 **어떻게 보이게 할지**(타이포·색·간격·모션·접근성)를 담당하지, 무엇을 만들지 정하지 않는다. 스킬이 PRD에 없는 화면·기능을 제안하면 임의로 넣지 말고 PRD 갱신 요청으로 올린다.
 
 | 항목 | 설치 |
 |---|---|

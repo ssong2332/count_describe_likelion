@@ -31,7 +31,7 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 
 | 단계 | 산출물 | 통과 게이트 |
 |---|---|---|
-| 아이디어 인터뷰 | 명세 요약 (커버리지 11항목) | 사용자가 "완성" 선언 |
+| 아이디어 인터뷰 | 명세 요약 (커버리지 12항목) | 사용자가 "완성" 선언 |
 | 기획 | docs/PRD.md, docs/Tasks.md | 사용자 승인 |
 | 설계 | docs/Architecture.md, docs/DECISIONS.md, docs/adr/ | 사용자 승인 |
 | 구현 | 소스 코드 | docs/DefinitionOfDone.md 체크리스트 전부 통과 (Tasks "검증중" 항목은 예외 — DoD 머리글의 예외 조항) |
@@ -159,7 +159,7 @@ Claude Code는 CLAUDE.md의 `@AGENTS.md` import로, Codex와 안티그래비티�
 
 | 스킬 | 내용 | 참조 주체 |
 |---|---|---|
-| **idea-interview** | **아이디어 → 명세 대화형 인터뷰 절차, 커버리지 11항목, 추천·반대 제시 규칙, 종료 조건** | **메인 세션 (기획 착수 전 필수)** |
+| **idea-interview** | **아이디어 → 명세 대화형 인터뷰 절차, 커버리지 12항목, 추천·반대 제시 규칙, 종료 조건** | **메인 세션 (기획 착수 전 필수)** |
 | tdd-practitioner | Red-Green-Refactor 절차, 테스트 케이스 도출 기준, 부실 테스트 방지 체크리스트 | implementer, quality-assurance |
 | clean-architecture | 계층 분리, 의존성 역전, DTO 경계, 순환 참조 금지 | architect, implementer, reviewer |
 | security-audit | 시크릿·주입·인증/인가(IDOR)·입력 검증 체크리스트 | reviewer, implementer, 보안 요구 시 architect |

@@ -20,6 +20,7 @@
 
 - [ ] 보안 대상(인증·결제·개인정보): `.agents/skills/security-audit/SKILL.md` 체크리스트 통과 — 시크릿 하드코딩 0건, 인가(IDOR) 서버측 검증, 민감 정보 로그 미노출, 신규 의존성 출처 확인.
 - [ ] 웹 UI: `.agents/skills/web-performance/SKILL.md`의 접근성 필수 항목(alt·키보드 포커스·명도 대비·label) 통과.
+- [ ] UI 있는 프로젝트: 이번 작업이 건드린 화면에 대해 docs/PRD.md "화면" 절이 정의한 상태(빈 값·로딩·에러 등)가 전부 구현돼 있다 — 정상 경로만 구현하고 나머지 상태를 나중으로 미룬 것은 미통과 (PRD가 "없음 — 사유"로 적은 상태는 해당 없음).
 - [ ] 계층형 구조 채택: `.agents/skills/clean-architecture/SKILL.md`의 검증 체크리스트(프레임워크 객체 유입 없음, DB 코드 위치, 순환 참조 없음) 통과.
 
 ## 판정 규칙
