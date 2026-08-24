@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShieldCheck, User, Users, PlusCircle, LogIn, Key, Sparkles, AlertCircle, CheckCircle2, UserCheck, History, Lock } from 'lucide-react';
 import { getRoomService, getCurrentServiceMode } from '../../services/service-factory';
 import { Room } from '../../domain/types';
+import { resolveSessionRole } from '../../domain/session-role';
 
 interface JoinScreenProps {
   onJoinSuccess: (session: { role: 'admin' | 'user'; roomId: string; memberId?: string; memberName?: string }) => void;
@@ -148,8 +149,11 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
           await roomService.checkIn(cleanRoomId, selectedMemberId);
         }
 
+        // 관리자로 등록된 인원은 사용자 모드로 들어와도 전체 대시보드를 본다
+        const effectiveRole = resolveSessionRole('user', targetMember);
+
         const record: LastLoginRecord = {
-          role: 'user',
+          role: effectiveRole,
           roomId: cleanRoomId,
           memberId: selectedMemberId,
           memberName: targetMember.name,
@@ -158,7 +162,7 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
         saveLastRecord(record);
 
         onJoinSuccess({
-          role: 'user',
+          role: effectiveRole,
           roomId: cleanRoomId,
           memberId: selectedMemberId,
           memberName: targetMember.name,
@@ -276,26 +280,27 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
         <h1 style={{ fontSize: '24px', fontWeight: 900, letterSpacing: '-0.5px', color: '#0f172a' }}>
           현황판 출결 시스템
         </h1>
-        <p style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
-          스마트폰 실시간 동기화 · 화장실/흡연/기타 타이머
-        </p>
-
-        {/* Sync Mode Badge */}
-        <div style={{ marginTop: '8px' }}>
-          <span
-            style={{
-              fontSize: '11px',
-              padding: '3px 8px',
-              borderRadius: '6px',
-              backgroundColor: serviceMode === 'firebase' ? '#ecfdf5' : '#eef2ff',
-              color: serviceMode === 'firebase' ? '#059669' : '#4f46e5',
-              border: `1px solid ${serviceMode === 'firebase' ? '#a7f3d0' : '#c7d2fe'}`,
-              fontWeight: 700,
-            }}
-          >
-            {serviceMode === 'firebase' ? '⚡ Firebase 원격 실시간' : '🌐 로컬 실시간 모드'}
-          </span>
-        </div>
+        {/*
+          정상(클라우드 연결) 상태에서는 배지를 표시하지 않는다.
+          로컬 폴백은 기기 간 동기화가 되지 않는 고장 상태이므로 반드시 알린다.
+        */}
+        {serviceMode !== 'firebase' && (
+          <div style={{ marginTop: '8px' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                padding: '3px 8px',
+                borderRadius: '6px',
+                backgroundColor: '#fef2f2',
+                color: '#dc2626',
+                border: '1px solid #fecaca',
+                fontWeight: 700,
+              }}
+            >
+              ⚠️ 클라우드 연결 실패 — 이 기기에서만 저장됩니다
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Main Card */}
