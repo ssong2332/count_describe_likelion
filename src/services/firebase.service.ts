@@ -29,6 +29,11 @@ const FIREBASE_CONFIG = {
   appId: '1:159250604563:web:61fbd232f2a4e9eb7d15e6',
 };
 
+// Firebase의 'undefined in property' 에러를 방지하기 위한 정제 함수
+function cleanForFirebase<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj, (_, v) => (v === undefined ? null : v)));
+}
+
 export class FirebaseService implements IRoomService {
   private app: FirebaseApp | null = null;
   private db: Database | null = null;
@@ -104,19 +109,21 @@ export class FirebaseService implements IRoomService {
       members: {},
     };
 
+    const cleaned = cleanForFirebase(newRoom);
+
     // REST PUT 으로 고속 저장
     try {
       await fetch(`${this.dbUrl}/rooms/${cleanId}.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newRoom),
+        body: JSON.stringify(cleaned),
       });
     } catch (e) {
       console.warn('[FirebaseService] REST put fallback:', e);
     }
 
     if (this.db) {
-      set(this.getRoomRef(cleanId), newRoom).catch(() => {});
+      set(this.getRoomRef(cleanId), cleaned).catch(() => {});
     }
 
     return newRoom;
@@ -124,20 +131,21 @@ export class FirebaseService implements IRoomService {
 
   async setAdminMembers(roomId: string, memberIds: string[]): Promise<void> {
     const cleanId = roomId.trim().toUpperCase();
+    const cleanedIds = cleanForFirebase(memberIds);
     
     // REST PATCH
     try {
       await fetch(`${this.dbUrl}/rooms/${cleanId}/adminMemberIds.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(memberIds),
+        body: JSON.stringify(cleanedIds),
       });
     } catch (e) {
       console.warn(e);
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${cleanId}/adminMemberIds`), memberIds).catch(() => {});
+      set(ref(this.db, `rooms/${cleanId}/adminMemberIds`), cleanedIds).catch(() => {});
     }
 
     const room = await this.getRoom(cleanId);
@@ -277,19 +285,20 @@ export class FirebaseService implements IRoomService {
 
     const memberId = `m_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const newMember = createDefaultMember(memberId, name, phone, group, shiftTime, roleNote, isAdmin);
+    const cleanedMember = cleanForFirebase(newMember);
 
     try {
       await fetch(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newMember),
+        body: JSON.stringify(cleanedMember),
       });
       if (isAdmin) {
         const updatedAdmins = Array.from(new Set([...(room.adminMemberIds || []), memberId]));
         await fetch(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedAdmins),
+          body: JSON.stringify(cleanForFirebase(updatedAdmins)),
         });
       }
     } catch (e) {
@@ -298,10 +307,10 @@ export class FirebaseService implements IRoomService {
 
     if (this.db) {
       const memberRef = ref(this.db, `rooms/${room.roomId}/members/${memberId}`);
-      set(memberRef, newMember).catch(() => {});
+      set(memberRef, cleanedMember).catch(() => {});
       if (isAdmin) {
         const updatedAdmins = Array.from(new Set([...(room.adminMemberIds || []), memberId]));
-        set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), updatedAdmins).catch(() => {});
+        set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), cleanForFirebase(updatedAdmins)).catch(() => {});
       }
     }
 
@@ -333,25 +342,27 @@ export class FirebaseService implements IRoomService {
     }
 
     const uniqueAdmins = Array.from(new Set(newAdminIds));
+    const cleanedMembers = cleanForFirebase(updatedMembers);
+    const cleanedAdmins = cleanForFirebase(uniqueAdmins);
 
     try {
       await fetch(`${this.dbUrl}/rooms/${room.roomId}/members.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedMembers),
+        body: JSON.stringify(cleanedMembers),
       });
       await fetch(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(uniqueAdmins),
+        body: JSON.stringify(cleanedAdmins),
       });
     } catch (e) {
       console.warn(e);
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${room.roomId}/members`), updatedMembers).catch(() => {});
-      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), uniqueAdmins).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/members`), cleanedMembers).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), cleanedAdmins).catch(() => {});
     }
   }
 
@@ -379,24 +390,27 @@ export class FirebaseService implements IRoomService {
       updatedAdmins = updatedAdmins.filter((id) => id !== memberId);
     }
 
+    const cleanedUpdated = cleanForFirebase(updated);
+    const cleanedAdmins = cleanForFirebase(updatedAdmins);
+
     try {
       await fetch(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
+        body: JSON.stringify(cleanedUpdated),
       });
       await fetch(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedAdmins),
+        body: JSON.stringify(cleanedAdmins),
       });
     } catch (e) {
       console.warn(e);
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), updated).catch(() => {});
-      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), updatedAdmins).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), cleanedUpdated).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), cleanedAdmins).catch(() => {});
     }
   }
 
@@ -409,13 +423,14 @@ export class FirebaseService implements IRoomService {
     if (!room || !room.members[memberId]) return;
 
     const updatedAdmins = (room.adminMemberIds || []).filter((id) => id !== memberId);
+    const cleanedAdmins = cleanForFirebase(updatedAdmins);
 
     try {
       await fetch(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, { method: 'DELETE' });
       await fetch(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedAdmins),
+        body: JSON.stringify(cleanedAdmins),
       });
     } catch (e) {
       console.warn(e);
@@ -423,7 +438,7 @@ export class FirebaseService implements IRoomService {
 
     if (this.db) {
       set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), null).catch(() => {});
-      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), updatedAdmins).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), cleanedAdmins).catch(() => {});
     }
   }
 
@@ -432,6 +447,7 @@ export class FirebaseService implements IRoomService {
     if (!room) return;
 
     const updatedAdmins = (room.adminMemberIds || []).filter((id) => !memberIds.includes(id));
+    const cleanedAdmins = cleanForFirebase(updatedAdmins);
 
     try {
       for (const id of memberIds) {
@@ -440,7 +456,7 @@ export class FirebaseService implements IRoomService {
       await fetch(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedAdmins),
+        body: JSON.stringify(cleanedAdmins),
       });
     } catch (e) {
       console.warn(e);
@@ -450,7 +466,7 @@ export class FirebaseService implements IRoomService {
       for (const id of memberIds) {
         set(ref(this.db, `rooms/${room.roomId}/members/${id}`), null).catch(() => {});
       }
-      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), updatedAdmins).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), cleanedAdmins).catch(() => {});
     }
   }
 
@@ -484,19 +500,20 @@ export class FirebaseService implements IRoomService {
     if (!room || !room.members[memberId]) throw new Error('인원을 찾을 수 없습니다.');
 
     const updated = toggleAttendance(room.members[memberId]);
+    const cleaned = cleanForFirebase(updated);
 
     try {
       await fetch(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
+        body: JSON.stringify(cleaned),
       });
     } catch (e) {
       console.warn(e);
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), updated).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), cleaned).catch(() => {});
     }
   }
 
@@ -505,19 +522,20 @@ export class FirebaseService implements IRoomService {
     if (!room || !room.members[memberId]) throw new Error('인원을 찾을 수 없습니다.');
 
     const updated = markPresent(room.members[memberId]);
+    const cleaned = cleanForFirebase(updated);
 
     try {
       await fetch(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
+        body: JSON.stringify(cleaned),
       });
     } catch (e) {
       console.warn(e);
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), updated).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), cleaned).catch(() => {});
     }
   }
 
@@ -543,18 +561,20 @@ export class FirebaseService implements IRoomService {
       updated = res.member;
     }
 
+    const cleaned = cleanForFirebase(updated);
+
     try {
       await fetch(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
+        body: JSON.stringify(cleaned),
       });
     } catch (e) {
       console.warn(e);
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), updated).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), cleaned).catch(() => {});
     }
   }
 
@@ -567,18 +587,20 @@ export class FirebaseService implements IRoomService {
       updatedMembers[id] = resetMemberDaily(m);
     }
 
+    const cleaned = cleanForFirebase(updatedMembers);
+
     try {
       await fetch(`${this.dbUrl}/rooms/${room.roomId}/members.json`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedMembers),
+        body: JSON.stringify(cleaned),
       });
     } catch (e) {
       console.warn(e);
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${room.roomId}/members`), updatedMembers).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/members`), cleaned).catch(() => {});
     }
   }
 }
