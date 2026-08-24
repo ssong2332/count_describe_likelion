@@ -18,7 +18,7 @@ export interface IRoomService {
   createRoom(roomId: string, pin: string): Promise<Room>;
 
   /**
-   * 1번 요구사항: 룸 내 관리자 멤버 ID 목록 일괄 설정
+   * 룸 내 관리자 멤버 ID 목록 일괄 설정
    */
   setAdminMembers(roomId: string, memberIds: string[]): Promise<void>;
 
@@ -68,9 +68,19 @@ export interface IRoomService {
   updateMemberName(roomId: string, memberId: string, name: string): Promise<void>;
 
   /**
-   * 인원 삭제
+   * 단일 인원 삭제
    */
   deleteMember(roomId: string, memberId: string): Promise<void>;
+
+  /**
+   * 2번 요구사항: 선택된 인원들 일괄 삭제
+   */
+  deleteMembers(roomId: string, memberIds: string[]): Promise<void>;
+
+  /**
+   * 2번 요구사항: 전체 인원 일괄 삭제
+   */
+  deleteAllMembers(roomId: string): Promise<void>;
 
   /**
    * 출결 상태 토글
@@ -83,7 +93,7 @@ export interface IRoomService {
   checkIn(roomId: string, memberId: string): Promise<void>;
 
   /**
-   * 자리비움 상태 변경 (화장실, 흡연, 기타 등 ON/OFF)
+   * 자리비움 상태 변경
    */
   setDeparture(
     roomId: string,

@@ -106,6 +106,30 @@ export function useRoomSync(roomId: string | null) {
     [roomId, roomService]
   );
 
+  const deleteMembers = useCallback(
+    async (memberIds: string[]) => {
+      if (!roomId) return;
+      try {
+        await roomService.deleteMembers(roomId, memberIds);
+      } catch (err: any) {
+        setError(err.message || '선택 인원 삭제 실패');
+      }
+    },
+    [roomId, roomService]
+  );
+
+  const deleteAllMembers = useCallback(
+    async () => {
+      if (!roomId) return;
+      try {
+        await roomService.deleteAllMembers(roomId);
+      } catch (err: any) {
+        setError(err.message || '전체 인원 삭제 실패');
+      }
+    },
+    [roomId, roomService]
+  );
+
   const toggleAttendance = useCallback(
     async (memberId: string) => {
       if (!roomId) return;
@@ -188,6 +212,8 @@ export function useRoomSync(roomId: string | null) {
     updateMember,
     updateMemberName,
     deleteMember,
+    deleteMembers,
+    deleteAllMembers,
     toggleAttendance,
     checkIn,
     setDeparture,

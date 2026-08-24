@@ -259,6 +259,27 @@ export class FirebaseService implements IRoomService {
     await set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), updatedAdmins);
   }
 
+  async deleteMembers(roomId: string, memberIds: string[]): Promise<void> {
+    const room = await this.getRoom(roomId);
+    if (!room) return;
+    if (!this.db) throw new Error('Firebase가 연결되지 않았습니다.');
+
+    for (const id of memberIds) {
+      await set(ref(this.db, `rooms/${room.roomId}/members/${id}`), null);
+    }
+    const updatedAdmins = (room.adminMemberIds || []).filter((id) => !memberIds.includes(id));
+    await set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), updatedAdmins);
+  }
+
+  async deleteAllMembers(roomId: string): Promise<void> {
+    const room = await this.getRoom(roomId);
+    if (!room) return;
+    if (!this.db) throw new Error('Firebase가 연결되지 않았습니다.');
+
+    await set(ref(this.db, `rooms/${room.roomId}/members`), {});
+    await set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), []);
+  }
+
   async toggleAttendance(roomId: string, memberId: string): Promise<void> {
     const room = await this.getRoom(roomId);
     if (!room || !room.members[memberId]) throw new Error('인원을 찾을 수 없습니다.');

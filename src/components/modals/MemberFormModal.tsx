@@ -11,7 +11,8 @@ interface MemberFormModalProps {
   editingMember?: Member | null;
 }
 
-const PRESET_GROUPS = ['전우조1', '전우조2', '기획조', '운영조'];
+// 1번 요구사항: 기획조, 운영조 제거하고 실제 전우조1, 전우조2만 제공
+const PRESET_GROUPS = ['전우조1', '전우조2'];
 const PRESET_SHIFTS = [
   '12:00 ~ 13:05',
   '13:00 ~ 14:05',
@@ -130,7 +131,7 @@ export const MemberFormModal: React.FC<MemberFormModalProps> = ({
           />
         </div>
 
-        {/* Squad / Group */}
+        {/* Squad / Group (전우조1, 전우조2만 제공) */}
         <div>
           <label style={{ fontSize: '13px', color: '#475569', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
             <Users size={15} /> 전우조 (조 명칭)
@@ -142,7 +143,7 @@ export const MemberFormModal: React.FC<MemberFormModalProps> = ({
                 type="button"
                 onClick={() => setGroup(g)}
                 style={{
-                  padding: '5px 10px',
+                  padding: '5px 12px',
                   borderRadius: '16px',
                   backgroundColor: group === g ? '#eef2ff' : '#f8fafc',
                   color: group === g ? '#4f46e5' : '#475569',

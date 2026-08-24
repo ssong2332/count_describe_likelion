@@ -253,6 +253,26 @@ export class LocalBroadcastService implements IRoomService {
     this.saveRoom(room);
   }
 
+  async deleteMembers(roomId: string, memberIds: string[]): Promise<void> {
+    const room = this.readRoom(roomId);
+    if (!room) return;
+
+    for (const id of memberIds) {
+      delete room.members[id];
+    }
+    room.adminMemberIds = (room.adminMemberIds || []).filter((id) => !memberIds.includes(id));
+    this.saveRoom(room);
+  }
+
+  async deleteAllMembers(roomId: string): Promise<void> {
+    const room = this.readRoom(roomId);
+    if (!room) return;
+
+    room.members = {};
+    room.adminMemberIds = [];
+    this.saveRoom(room);
+  }
+
   async toggleAttendance(roomId: string, memberId: string): Promise<void> {
     const room = this.readRoom(roomId);
     if (!room || !room.members[memberId]) throw new Error('인원을 찾을 수 없습니다.');

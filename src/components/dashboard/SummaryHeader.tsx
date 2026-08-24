@@ -14,6 +14,7 @@ interface SummaryHeaderProps {
   onSetSortMode: (mode: ViewSortMode) => void;
   onOpenAddMember: () => void;
   onOpenBatchImport: () => void;
+  onOpenBatchDelete: () => void;
   onOpenRoomList: () => void;
   onOpenAdminManager: () => void;
   onLogout: () => void;
@@ -30,6 +31,7 @@ export const SummaryHeader: React.FC<SummaryHeaderProps> = ({
   onSetSortMode,
   onOpenAddMember,
   onOpenBatchImport,
+  onOpenBatchDelete,
   onOpenRoomList,
   onOpenAdminManager,
   onLogout,
@@ -102,6 +104,22 @@ export const SummaryHeader: React.FC<SummaryHeaderProps> = ({
             }}
           >
             + 인원 등록
+          </button>
+          <button
+            type="button"
+            onClick={onOpenBatchDelete}
+            style={{
+              padding: '8px 10px',
+              borderRadius: '10px',
+              backgroundColor: '#fef2f2',
+              border: '1.5px solid #fca5a5',
+              color: '#b91c1c',
+              fontSize: '12px',
+              fontWeight: 800,
+            }}
+            title="인원 선택 및 전체 삭제"
+          >
+            인원 정리
           </button>
           <button
             onClick={onLogout}

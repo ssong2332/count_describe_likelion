@@ -8,6 +8,7 @@ import { MemberDetailModal } from './MemberDetailModal';
 import { MemberFormModal } from '../modals/MemberFormModal';
 import { BatchImportModal } from '../modals/BatchImportModal';
 import { AdminManagerModal } from '../modals/AdminManagerModal';
+import { MemberBatchDeleteModal } from '../modals/MemberBatchDeleteModal';
 import { ReasonModal } from '../modals/ReasonModal';
 import { StatusLogDrawer } from '../modals/StatusLogDrawer';
 import { RoomListModal } from '../modals/RoomListModal';
@@ -39,6 +40,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ roomId, onLogout
     setAdminMembers,
     updateMember,
     deleteMember,
+    deleteMembers,
+    deleteAllMembers,
     toggleAttendance,
     setDeparture,
     resetDaily,
@@ -51,6 +54,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ roomId, onLogout
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
   const [isAdminManagerOpen, setIsAdminManagerOpen] = useState(false);
+  const [isBatchDeleteOpen, setIsBatchDeleteOpen] = useState(false);
   const [isRoomListOpen, setIsRoomListOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
@@ -137,6 +141,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ roomId, onLogout
         onSetSortMode={setSortMode}
         onOpenAddMember={() => setIsAddModalOpen(true)}
         onOpenBatchImport={() => setIsBatchImportOpen(true)}
+        onOpenBatchDelete={() => setIsBatchDeleteOpen(true)}
         onOpenRoomList={() => setIsRoomListOpen(true)}
         onOpenAdminManager={() => setIsAdminManagerOpen(true)}
         onLogout={onLogout}
@@ -394,6 +399,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ roomId, onLogout
         members={rawMemberList}
         adminMemberIds={room?.adminMemberIds || []}
         onSaveAdminMembers={handleSaveAdminMembers}
+      />
+
+      {/* 2번 요구사항: 인원 선택 및 전체 삭제 모달 */}
+      <MemberBatchDeleteModal
+        isOpen={isBatchDeleteOpen}
+        onClose={() => setIsBatchDeleteOpen(false)}
+        members={rawMemberList}
+        onDeleteMembers={async (ids) => {
+          await deleteMembers(ids);
+        }}
+        onDeleteAllMembers={async () => {
+          await deleteAllMembers();
+        }}
       />
 
       <MemberFormModal
