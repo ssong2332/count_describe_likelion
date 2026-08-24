@@ -20,7 +20,8 @@ interface LastLoginRecord {
 
 export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
   const [tab, setTab] = useState<'join' | 'create'>('join');
-  const [role, setRole] = useState<'admin' | 'user'>('admin');
+  // 접속 대부분이 사용자이므로 사용자 모드를 기본으로 둔다.
+  const [role, setRole] = useState<'admin' | 'user'>('user');
   const [roomId, setRoomId] = useState<string>('');
   const [pin, setPin] = useState<string>('');
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
@@ -464,7 +465,7 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
                   }}
                 >
                   <User size={20} />
-                  <span>사용자 (본인 제어)</span>
+                  <span>사용자</span>
                 </button>
               </div>
             </div>
@@ -482,6 +483,7 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
                   onChange={(e) => { setRoomId(e.target.value.toUpperCase()); setFetchedRoom(null); }}
                   style={{
                     flex: 1,
+                    minWidth: 0,
                     padding: '12px 14px',
                     backgroundColor: '#f8fafc',
                     border: '2px solid #cbd5e1',
@@ -507,6 +509,7 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
                       fontWeight: 800,
                       fontSize: '13px',
                       whiteSpace: 'nowrap',
+                      flexShrink: 0,
                     }}
                   >
                     인원 조회

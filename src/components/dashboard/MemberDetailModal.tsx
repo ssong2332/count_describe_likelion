@@ -96,17 +96,20 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
             </div>
           </div>
 
-          {/* 전화번호 텍스트 표시 */}
+          {/* 전화번호 — 누르면 전화 앱으로 연결 */}
           {member.phone && (
-            <div
+            <a
+              href={`tel:${member.phone.replace(/[^0-9+]/g, '')}`}
+              title={`${member.name} 님에게 전화 걸기`}
               style={{
                 padding: '6px 10px',
                 borderRadius: '8px',
-                backgroundColor: '#f1f5f9',
-                border: '1.5px solid #cbd5e1',
-                color: '#334155',
+                backgroundColor: '#eef2ff',
+                border: '1.5px solid #c7d2fe',
+                color: '#4f46e5',
                 fontWeight: 800,
                 fontSize: '13px',
+                textDecoration: 'none',
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '4px',
@@ -115,9 +118,9 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
                 alignSelf: 'flex-start',
               }}
             >
-              <Phone size={13} color="#4f46e5" />
+              <Phone size={13} />
               <span style={{ whiteSpace: 'nowrap' }}>{member.phone}</span>
-            </div>
+            </a>
           )}
         </div>
 
