@@ -120,7 +120,7 @@ export const SummaryHeader: React.FC<SummaryHeaderProps> = ({
         </div>
       </div>
 
-      {/* 1번 요구사항: 관리자(운영진) 목록 관리 바 */}
+      {/* 1번 요구사항: 룸 관리자 목록 바 */}
       <div
         style={{
           display: 'flex',
@@ -135,10 +135,10 @@ export const SummaryHeader: React.FC<SummaryHeaderProps> = ({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '13px', fontWeight: 900, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <ShieldCheck size={16} color="#4f46e5" /> 관리자(운영진):
+            <ShieldCheck size={16} color="#4f46e5" /> 룸 관리자:
           </span>
           {adminMembers.length === 0 ? (
-            <span style={{ fontSize: '12px', color: '#94a3b8' }}>미지정 (인원 중 선택 필요)</span>
+            <span style={{ fontSize: '12px', color: '#94a3b8' }}>미지정 (인원 중 선택 가능)</span>
           ) : (
             adminMembers.map((m) => (
               <span

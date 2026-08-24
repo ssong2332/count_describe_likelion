@@ -25,7 +25,6 @@ export function createDefaultMember(
 
 export function toggleAttendance(member: Member): Member {
   const newIsPresent = !member.isPresent;
-  // 결석 처리 시 활성화된 자리비움이 있다면 자동 종료
   if (!newIsPresent && member.activeStatus !== 'none') {
     return {
       ...endDeparture(member),
@@ -51,12 +50,10 @@ export function startDeparture(
   reason?: string,
   timestamp: number = Date.now()
 ): { member: Member; error?: string } {
-  // 1단계 출석 검증: 미출석 상태에서는 자리비움 불가
   if (!member.isPresent) {
     return { member, error: '출석 체크를 먼저 진행해주세요.' };
   }
 
-  // 자리비움 중복 전환 차단
   if (member.activeStatus !== 'none' && member.activeStatus !== type) {
     const currentName =
       member.activeStatus === 'toilet'
@@ -176,7 +173,7 @@ export interface ScheduleBlock {
   }[];
 }
 
-// 스케줄 블록 빌더
+// 스케줄 블록 빌더 (순수 조별 묶음)
 export function buildScheduleBlocks(members: Member[]): ScheduleBlock[] {
   const standardShifts = [
     '12:00 ~ 13:05',
@@ -191,7 +188,7 @@ export function buildScheduleBlocks(members: Member[]): ScheduleBlock[] {
 
   for (const m of members) {
     const shifts = m.shiftTime ? m.shiftTime.split(',').map((s) => s.trim()) : ['시간 미지정'];
-    const squad = m.isAdmin ? '👑 운영진' : (m.group || '조 미지정');
+    const squad = m.group || '조 미지정';
 
     for (const shift of shifts) {
       if (!shiftMap[shift]) {
@@ -219,7 +216,7 @@ export function buildScheduleBlocks(members: Member[]): ScheduleBlock[] {
   });
 }
 
-// 표 파서 (동명이인은 1명의 고유 멤버로 통합 & 메인 운영진은 isAdmin: true 처리)
+// 표 파서
 export function parseScheduleTextToMembers(rawText: string): Omit<Member, 'id' | 'isPresent' | 'activeStatus' | 'logs'>[] {
   const memberMap: Map<string, {
     name: string;
@@ -260,7 +257,7 @@ export function parseScheduleTextToMembers(rawText: string): Omit<Member, 'id' |
       const squad1 = parts[3] || '';
       const squad2 = parts[4] || '';
 
-      const addPerson = (name: string, group: string, role: string, isAdmin: boolean) => {
+      const addPerson = (name: string, group: string, isAdmin: boolean) => {
         const cleanName = name.trim();
         if (!cleanName || cleanName === '전원') return;
         if (!memberMap.has(cleanName)) {
@@ -268,7 +265,6 @@ export function parseScheduleTextToMembers(rawText: string): Omit<Member, 'id' |
             name: cleanName,
             groupList: new Set(group ? [group] : []),
             shiftList: new Set([shift]),
-            roleNote: role,
             isAdmin,
           });
         } else {
@@ -279,12 +275,12 @@ export function parseScheduleTextToMembers(rawText: string): Omit<Member, 'id' |
         }
       };
 
-      if (mainAdmin) addPerson(mainAdmin, '', '메인 운영진', true);
+      if (mainAdmin) addPerson(mainAdmin, '관리자', true);
       if (squad1) {
-        squad1.split(',').forEach((n) => addPerson(n, `전우조1 (${squad1.trim()})`, '아기사자', false));
+        squad1.split(',').forEach((n) => addPerson(n, `전우조1 (${squad1.trim()})`, false));
       }
       if (squad2) {
-        squad2.split(',').forEach((n) => addPerson(n, `전우조2 (${squad2.trim()})`, '아기사자', false));
+        squad2.split(',').forEach((n) => addPerson(n, `전우조2 (${squad2.trim()})`, false));
       }
     }
   }
@@ -295,7 +291,6 @@ export function parseScheduleTextToMembers(rawText: string): Omit<Member, 'id' |
       name: val.name,
       group: Array.from(val.groupList)[0] || undefined,
       shiftTime: Array.from(val.shiftList).join(', '),
-      roleNote: val.roleNote,
       isAdmin: val.isAdmin,
     });
   });

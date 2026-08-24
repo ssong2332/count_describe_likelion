@@ -44,10 +44,10 @@ export const AdminManagerModal: React.FC<AdminManagerModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="👑 관리자(운영진) 인원 지정">
+    <Modal isOpen={isOpen} onClose={onClose} title="👑 룸 관리자 인원 지정">
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         <p style={{ fontSize: '13px', color: '#64748b' }}>
-          등록된 인원 중 관리자(운영진) 역할을 수행할 인원을 1명 이상 선택하세요. 선택된 인원은 사용자에게 관리자 연락처로 안내되며, 사용자로 접속 시 관리자 PIN 인증이 요구됩니다.
+          등록된 인원 중 관리자 역할을 수행할 인원을 선택하세요. 선택된 인원의 연락처가 사용자에게 관리자 번호로 제공되며, 사용자로 접속 시 관리자 PIN 인증이 요구됩니다.
         </p>
 
         {/* Member Selectable List */}

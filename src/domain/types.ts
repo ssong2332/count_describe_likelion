@@ -15,7 +15,7 @@ export interface Member {
   phone?: string;          // 전화번호
   group?: string;          // 전우조 (예: 전우조1, 전우조2 등)
   shiftTime?: string;      // 부스 운영 시간대 (예: 12:00 ~ 13:05)
-  isAdmin?: boolean;       // 1번 & 2번 요구사항: 운영진(관리자) 여부
+  isAdmin?: boolean;       // 관리자 여부 (관리자 PIN 인증 및 연락처 제공)
   roleNote?: string;       // 역할 메모
   isPresent: boolean;      // 출석 여부 (1단계)
   activeStatus: DepartureType;
@@ -27,7 +27,7 @@ export interface Member {
 export interface Room {
   roomId: string;
   pin: string;
-  adminMemberIds?: string[]; // 1번 요구사항: 복수 관리자 ID 목록
+  adminMemberIds?: string[]; // 관리자 인원 ID 목록
   createdAt: number;
   members: Record<string, Member>;
 }

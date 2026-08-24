@@ -126,7 +126,7 @@ export const UserControlPanel: React.FC<UserControlPanelProps> = ({
                   border: '1px solid #c7d2fe',
                 }}
               >
-                👑 운영진
+                👑 룸 관리자
               </span>
             )}
             {member.group && (
