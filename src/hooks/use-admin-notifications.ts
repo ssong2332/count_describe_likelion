@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Member } from '../domain/types';
 
-// Web Audio API를 활용한 알림 경고음 생성 함수
+// Web Audio API 경고음
 function playAlertBeep(frequency = 660, duration = 0.4) {
   try {
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -28,19 +28,31 @@ export function useAdminNotifications(members: Member[], isEnabled: boolean = tr
   const prevStatusRef = useRef<Map<string, string>>(new Map());
   const notified9MinRef = useRef<Set<string>>(new Set());
   const [overdueMembers, setOverdueMembers] = useState<Member[]>([]);
-  const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>('default');
-
-  useEffect(() => {
+  const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
-      setPermissionStatus(Notification.permission);
+      return Notification.permission;
     }
-  }, []);
+    return 'default';
+  });
 
   const requestPermission = useCallback(async () => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
-      const perm = await Notification.requestPermission();
-      setPermissionStatus(perm);
-      return perm;
+      try {
+        const perm = await Notification.requestPermission();
+        setPermissionStatus(perm);
+        if (perm === 'granted') {
+          playAlertBeep(587, 0.3);
+          new Notification('🔔 알림 활성화 완료', {
+            body: '자리비움 상태 전환 및 9분 초과 시 실시간 알림이 발송됩니다.',
+            icon: '/favicon.ico',
+          });
+        } else if (perm === 'denied') {
+          alert('브라우저 설정에서 알림 권한이 차단되어 있습니다. 주소창 좌측의 자물쇠/설정 아이콘을 눌러 알림을 [허용]으로 변경해주세요.');
+        }
+        return perm;
+      } catch (e) {
+        console.error('Request permission failed', e);
+      }
     }
     return 'denied';
   }, []);
@@ -82,7 +94,7 @@ export function useAdminNotifications(members: Member[], isEnabled: boolean = tr
     }
   }, [members, isEnabled]);
 
-  // 3번 요구사항: 9분(540초) 초과 자리비움 모니터링
+  // 9분 초과 자리비움 모니터링
   useEffect(() => {
     if (!isEnabled) return;
 

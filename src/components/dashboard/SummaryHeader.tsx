@@ -197,33 +197,34 @@ export const SummaryHeader: React.FC<SummaryHeaderProps> = ({
         </button>
       </div>
 
-      {/* 3번 요구사항: 9분 초과 경고 실시간 배너 */}
+      {/* 3번 요구사항: 9분 초과 긴급 경고 배너 */}
       {overdueMembers.length > 0 && (
         <div
           style={{
-            padding: '10px 14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 14px',
             backgroundColor: '#fef2f2',
             border: '2px solid #ef4444',
             borderRadius: '12px',
             color: '#b91c1c',
             fontSize: '13px',
             fontWeight: 800,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.2)',
             animation: 'pulse 1.5s infinite',
+            boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)',
           }}
         >
-          <AlertTriangle size={20} color="#ef4444" />
-          <div>
-            <strong>🚨 9분 초과 자리비움 경고!</strong> {overdueMembers.map((m) => `${m.name} (${m.activeStatus === 'toilet' ? '화장실' : m.activeStatus === 'smoking' ? '흡연' : '기타'})`).join(', ')}
-          </div>
+          <AlertTriangle size={20} color="#ef4444" style={{ flexShrink: 0 }} />
+          <span>
+            🚨 <strong>9분 초과 자리비움 경고:</strong>{' '}
+            {overdueMembers.map((m) => `${m.name} 님(${m.activeStatus === 'toilet' ? '화장실' : m.activeStatus === 'smoking' ? '흡연' : '기타'})`).join(', ')}
+          </span>
         </div>
       )}
 
-      {/* 알림 권한 요청 배너 */}
-      {notificationPermission === 'default' && (
+      {/* 브라우저 푸시 알림 권한 상태 배너 */}
+      {notificationPermission !== 'granted' ? (
         <div
           style={{
             display: 'flex',
@@ -232,29 +233,51 @@ export const SummaryHeader: React.FC<SummaryHeaderProps> = ({
             padding: '8px 12px',
             backgroundColor: '#fffbeb',
             border: '1.5px solid #fde68a',
-            borderRadius: '10px',
+            borderRadius: '12px',
             color: '#b45309',
             fontSize: '12px',
             fontWeight: 700,
           }}
         >
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Bell size={14} /> 9분 초과 및 상태 전환 푸시 알림을 받으시겠습니까?
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Bell size={15} />
+            <span>9분 초과 및 상태 전환 푸시 알림을 받으시겠습니까?</span>
+          </div>
           <button
             type="button"
             onClick={onRequestNotificationPermission}
             style={{
-              padding: '4px 8px',
+              padding: '4px 10px',
               borderRadius: '6px',
               backgroundColor: '#d97706',
               color: '#ffffff',
               fontSize: '11px',
               fontWeight: 800,
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(217, 119, 6, 0.25)',
             }}
           >
             알림 켜기
           </button>
+        </div>
+      ) : (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '6px 12px',
+            backgroundColor: '#ecfdf5',
+            border: '1px solid #a7f3d0',
+            borderRadius: '10px',
+            color: '#059669',
+            fontSize: '12px',
+            fontWeight: 800,
+          }}
+        >
+          <CheckCircle2 size={14} />
+          <span>🔔 9분 초과 및 상태 변경 실시간 알림 활성화됨 (소리 + 푸시)</span>
         </div>
       )}
 

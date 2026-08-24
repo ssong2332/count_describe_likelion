@@ -387,7 +387,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ roomId, onLogout
       <BatchImportModal
         isOpen={isBatchImportOpen}
         onClose={() => setIsBatchImportOpen(false)}
-        onConfirmImport={async (imported) => {
+        onImport={async (imported) => {
           await importScheduleMembers(imported);
         }}
       />
