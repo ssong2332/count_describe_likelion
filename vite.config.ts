@@ -28,9 +28,25 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
-        // 실시간 데이터는 절대 캐시하지 않는다 — 오래된 현황이 보이면 안 된다.
-        navigateFallbackDenylist: [/^\/__/],
+        // 새 배포가 나오면 즉시 교체한다. 이게 없으면 재방문자가 캐시된 옛
+        // index.html을 계속 보고, 그 HTML이 가리키는 번들은 서버에서 사라져
+        // 404가 난다.
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
+        // 문서(HTML)는 캐시에서 먼저 주지 않는다. 캐시된 HTML은 사라진
+        // 번들을 가리킬 수 있으므로 항상 네트워크를 먼저 시도한다.
+        navigateFallback: null,
         runtimeCaching: [
+          {
+            urlPattern: ({ request }: { request: Request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'html-shell',
+              networkTimeoutSeconds: 3,
+              expiration: { maxEntries: 4 },
+            },
+          },
           {
             urlPattern: /^https:\/\/[a-z0-9-]+\.firebasedatabase\.app\/.*/i,
             handler: 'NetworkOnly',

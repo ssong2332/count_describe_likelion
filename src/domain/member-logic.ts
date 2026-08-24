@@ -1,3 +1,4 @@
+import { PRESET_SHIFTS } from './shift-time';
 import { DepartureType, Member, StatusLog } from './types';
 
 export function createDefaultMember(
@@ -175,14 +176,7 @@ export interface ScheduleBlock {
 
 // 스케줄 블록 빌더 (순수 조별 묶음)
 export function buildScheduleBlocks(members: Member[]): ScheduleBlock[] {
-  const standardShifts = [
-    '12:00 ~ 13:05',
-    '13:00 ~ 14:05',
-    '14:00 ~ 15:05',
-    '15:00 ~ 16:05',
-    '16:00 ~ 17:05',
-    '17:30 ~ 18:00',
-  ];
+  const standardShifts = PRESET_SHIFTS;
 
   const shiftMap: Record<string, Record<string, Member[]>> = {};
 
@@ -246,12 +240,14 @@ export function parseScheduleTextToMembers(rawText: string): Omit<Member, 'id' |
     if (parts.length >= 2) {
       const shiftRaw = parts[0];
       let shift = shiftRaw;
-      if (shiftRaw.includes('12시')) shift = '12:00 ~ 13:05';
-      else if (shiftRaw.includes('1시')) shift = '13:00 ~ 14:05';
-      else if (shiftRaw.includes('2시')) shift = '14:00 ~ 15:05';
-      else if (shiftRaw.includes('3시')) shift = '15:00 ~ 16:05';
-      else if (shiftRaw.includes('4시')) shift = '16:00 ~ 17:05';
-      else if (shiftRaw.includes('5시')) shift = '17:30 ~ 18:00';
+      // 일괄 등록도 수동 입력과 같은 1시간 단위 문자열을 쓴다.
+      // 값이 다르면 같은 시간대가 두 블록으로 쪼개진다.
+      if (shiftRaw.includes('12시')) shift = PRESET_SHIFTS[0];
+      else if (shiftRaw.includes('1시')) shift = PRESET_SHIFTS[1];
+      else if (shiftRaw.includes('2시')) shift = PRESET_SHIFTS[2];
+      else if (shiftRaw.includes('3시')) shift = PRESET_SHIFTS[3];
+      else if (shiftRaw.includes('4시')) shift = PRESET_SHIFTS[4];
+      else if (shiftRaw.includes('5시')) shift = PRESET_SHIFTS[5];
 
       const mainAdmin = parts[1] || '';
       const squad1 = parts[3] || '';
