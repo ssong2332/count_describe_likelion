@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, User, Users, PlusCircle, LogIn, Key, Sparkles, AlertCircle, CheckCircle2, UserCheck, History } from 'lucide-react';
+import { ShieldCheck, User, Users, PlusCircle, LogIn, Key, Sparkles, AlertCircle, CheckCircle2, UserCheck, History, Lock } from 'lucide-react';
 import { getRoomService, getCurrentServiceMode } from '../../services/service-factory';
 import { Room } from '../../domain/types';
 
@@ -23,6 +23,7 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
   const [roomId, setRoomId] = useState<string>('');
   const [pin, setPin] = useState<string>('');
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
+  const [userAdminPin, setUserAdminPin] = useState<string>(''); // 1번 요구사항: 관리자로 등록된 사람의 사용자 모드 PIN
   
   // Create Room state
   const [newRoomId, setNewRoomId] = useState<string>('');
@@ -59,7 +60,7 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
     }
   };
 
-  // 룸 정보 조회 (사용자 모드에서 인원 목록 로드 시)
+  // 룸 정보 조회
   const handleCheckRoom = async () => {
     if (!roomId.trim()) {
       setErrorMsg('룸 코드를 입력해주세요.');
@@ -126,7 +127,23 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
         }
 
         const targetMember = room.members[selectedMemberId];
-        // 만약 출석하지 않은 상태라면 직접 출석 체크 후 입장
+
+        // 1번 요구사항: 관리자로 등록된 인원이 사용자로 입장 시 관리자 PIN 검증
+        if (targetMember.isAdmin) {
+          if (!userAdminPin.trim()) {
+            setErrorMsg('관리자로 등록된 인원입니다. 관리자 PIN 번호를 입력해주세요.');
+            setIsLoading(false);
+            return;
+          }
+          const isPinValid = await roomService.verifyPin(cleanRoomId, userAdminPin.trim());
+          if (!isPinValid) {
+            setErrorMsg('관리자 PIN 번호가 일치하지 않습니다.');
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        // 출석 체크 처리
         if (!targetMember.isPresent) {
           await roomService.checkIn(cleanRoomId, selectedMemberId);
         }
@@ -181,7 +198,7 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
     }
   };
 
-  // 2번 요구사항: 최근 기록 [불러오기] 클릭 시 바로 입장!
+  // 최근 기록 [불러오기] 클릭 시 바로 입장
   const handleDirectQuickJoin = async (record: LastLoginRecord) => {
     setIsLoading(true);
     setErrorMsg(null);
@@ -193,10 +210,8 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
       }
 
       if (record.role === 'admin') {
-        // 관리자로 바로 입장
         onJoinSuccess({ role: 'admin', roomId: record.roomId });
       } else {
-        // 사용자로 바로 입장
         if (record.memberId && room.members[record.memberId]) {
           const target = room.members[record.memberId];
           if (!target.isPresent) {
@@ -209,7 +224,6 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
             memberName: target.name,
           });
         } else {
-          // 인원 선택 모드로 전환
           setRole('user');
           setRoomId(record.roomId);
           setFetchedRoom(room);
@@ -236,7 +250,7 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
         padding: '16px 0',
       }}
     >
-      {/* App Header Logo (1번 요구사항: 상단 룸 목록 관리 버튼 제거) */}
+      {/* App Header Logo */}
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
         <div
           style={{
@@ -291,7 +305,7 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
           boxShadow: '0 4px 24px rgba(15, 23, 42, 0.08)',
         }}
       >
-        {/* 2번 요구사항: 최근 로그인 기록 카드 -> [불러오기] 클릭 시 바로 입장! */}
+        {/* 최근 로그인 기록 카드 */}
         {lastRecord && (
           <div
             style={{
@@ -333,7 +347,7 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
           </div>
         )}
 
-        {/* Tab Toggle (입장 vs 방 만들기) */}
+        {/* Tab Toggle */}
         <div
           style={{
             display: 'grid',
@@ -520,7 +534,7 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
               </div>
             )}
 
-            {/* User Mode: Member Selection (이름만 표시) */}
+            {/* User Mode: Member Selection */}
             {role === 'user' && fetchedRoom && (
               <div>
                 <label style={{ fontSize: '13px', color: '#475569', fontWeight: 800, display: 'block', marginBottom: '6px' }}>
@@ -550,10 +564,40 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
                     >
                       {Object.values(fetchedRoom.members).map((m) => (
                         <option key={m.id} value={m.id}>
-                          {m.name}
+                          {m.name} {m.isAdmin ? '👑 (관리자)' : ''}
                         </option>
                       ))}
                     </select>
+
+                    {/* 1번 요구사항: 관리자로 등록된 인원인 경우 관리자 PIN 입력 요구 */}
+                    {selectedMember?.isAdmin && (
+                      <div style={{ marginTop: '8px', marginBottom: '8px' }}>
+                        <label style={{ fontSize: '13px', color: '#4f46e5', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+                          <Lock size={15} /> 👑 관리자 본인 인증 (PIN 번호 필수)
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type="password"
+                            placeholder="관리자 PIN 번호 입력"
+                            value={userAdminPin}
+                            onChange={(e) => setUserAdminPin(e.target.value)}
+                            style={{
+                              width: '100%',
+                              padding: '12px 14px 12px 38px',
+                              backgroundColor: '#f8fafc',
+                              border: '2px solid #c7d2fe',
+                              borderRadius: '12px',
+                              color: '#0f172a',
+                              fontSize: '14px',
+                              fontWeight: 700,
+                              outline: 'none',
+                            }}
+                            required
+                          />
+                          <Key size={18} color="#4f46e5" style={{ position: 'absolute', left: '12px', top: '13px' }} />
+                        </div>
+                      </div>
+                    )}
 
                     {/* Member Status Notice */}
                     {selectedMember && (

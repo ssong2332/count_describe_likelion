@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useRoomSync } from '../../hooks/use-room-sync';
 import { useTimer } from '../../hooks/use-timer';
 import { Badge } from '../common/Badge';
 import { ReasonModal } from '../modals/ReasonModal';
 import { StatusLogDrawer } from '../modals/StatusLogDrawer';
-import { Clock, Cigarette, HelpCircle, History, LogOut, CheckCircle2, UserX, Users, AlertCircle, PhoneCall } from 'lucide-react';
+import { Clock, Cigarette, HelpCircle, History, LogOut, CheckCircle2, UserX, Users, AlertCircle, PhoneCall, Phone, ShieldCheck } from 'lucide-react';
 import { DepartureType } from '../../domain/types';
 import { Modal } from '../common/Modal';
 
@@ -19,7 +19,7 @@ export const UserControlPanel: React.FC<UserControlPanelProps> = ({
   memberId,
   onLogout,
 }) => {
-  const { room, setDeparture, isLoading, error } = useRoomSync(roomId);
+  const { room, rawMemberList, setDeparture, isLoading, error } = useRoomSync(roomId);
   const member = room?.members[memberId] || null;
 
   const { formatted: timerFormatted } = useTimer(member?.departureTime);
@@ -27,6 +27,11 @@ export const UserControlPanel: React.FC<UserControlPanelProps> = ({
   const [isLogDrawerOpen, setIsLogDrawerOpen] = useState(false);
   const [isAdminContactOpen, setIsAdminContactOpen] = useState(false);
   const [actionWarning, setActionWarning] = useState<string | null>(null);
+
+  // 1번 요구사항: 룸에 등록된 모든 관리자(운영진) 목록
+  const adminMembers = useMemo(() => {
+    return rawMemberList.filter((m) => m.isAdmin);
+  }, [rawMemberList]);
 
   const handleSafeSetDeparture = async (type: DepartureType, reason?: string) => {
     if (!member) return;
@@ -109,6 +114,21 @@ export const UserControlPanel: React.FC<UserControlPanelProps> = ({
               label={member.isPresent ? '출석 완료' : '미출석'}
               size="sm"
             />
+            {member.isAdmin && (
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  backgroundColor: '#eef2ff',
+                  color: '#4f46e5',
+                  border: '1px solid #c7d2fe',
+                }}
+              >
+                👑 운영진
+              </span>
+            )}
             {member.group && (
               <span
                 style={{
@@ -116,9 +136,9 @@ export const UserControlPanel: React.FC<UserControlPanelProps> = ({
                   fontWeight: 800,
                   padding: '2px 8px',
                   borderRadius: '6px',
-                  backgroundColor: '#eef2ff',
-                  color: '#4f46e5',
-                  border: '1px solid #c7d2fe',
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
+                  border: '1px solid #e2e8f0',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '3px',
@@ -141,7 +161,7 @@ export const UserControlPanel: React.FC<UserControlPanelProps> = ({
         </div>
 
         <div style={{ display: 'flex', gap: '6px' }}>
-          {/* 9번 요구사항: 관리자 연락처 확인 버튼 */}
+          {/* 1번 요구사항: 관리자 연락처 확인 버튼 */}
           <button
             type="button"
             onClick={() => setIsAdminContactOpen(true)}
@@ -158,7 +178,7 @@ export const UserControlPanel: React.FC<UserControlPanelProps> = ({
               gap: '3px',
             }}
           >
-            <PhoneCall size={13} /> 관리자 연락처
+            <PhoneCall size={13} /> 관리자 연락처 ({adminMembers.length})
           </button>
           <button
             type="button"
@@ -438,49 +458,77 @@ export const UserControlPanel: React.FC<UserControlPanelProps> = ({
         </button>
       </div>
 
-      {/* 9번 요구사항: 관리자 연락처 모달 */}
+      {/* 1번 요구사항: 관리자(운영진) 연락처 목록 모달 */}
       <Modal
         isOpen={isAdminContactOpen}
         onClose={() => setIsAdminContactOpen(false)}
-        title="관리자 연락처 정보"
+        title="👑 관리자(운영진) 연락처 안내"
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', textAlign: 'center', padding: '10px 0' }}>
-          <div style={{ fontSize: '32px' }}>👑</div>
-          <div>
-            <div style={{ fontSize: '16px', fontWeight: 900, color: '#0f172a' }}>
-              관리자: {room?.adminName || '등록된 관리자'}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {adminMembers.length === 0 ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+              현재 등록된 관리자 연락처가 없습니다.
             </div>
-            <div style={{ fontSize: '14px', color: '#4f46e5', fontWeight: 800, marginTop: '6px' }}>
-              {room?.adminPhone ? (
-                <a
-                  href={`tel:${room.adminPhone}`}
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '240px', overflowY: 'auto' }}>
+              {adminMembers.map((adm) => (
+                <div
+                  key={adm.id}
                   style={{
-                    padding: '8px 16px',
-                    borderRadius: '10px',
-                    backgroundColor: '#eef2ff',
-                    border: '1.5px solid #c7d2fe',
-                    color: '#4f46e5',
-                    textDecoration: 'none',
-                    display: 'inline-flex',
+                    display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '15px',
-                    fontWeight: 900,
+                    justifyContent: 'space-between',
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    backgroundColor: '#f8fafc',
+                    border: '1.5px solid #e2e8f0',
                   }}
                 >
-                  📞 {room.adminPhone} (전화 걸기)
-                </a>
-              ) : (
-                <span style={{ color: '#64748b', fontSize: '13px' }}>등록된 관리자 전화번호가 없습니다.</span>
-              )}
+                  <div>
+                    <div style={{ fontSize: '15px', fontWeight: 900, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <ShieldCheck size={16} color="#4f46e5" />
+                      <span>{adm.name}</span>
+                    </div>
+                    {adm.roleNote && (
+                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '1px' }}>
+                        {adm.roleNote}
+                      </div>
+                    )}
+                  </div>
+
+                  {adm.phone ? (
+                    <a
+                      href={`tel:${adm.phone}`}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        backgroundColor: '#eef2ff',
+                        border: '1px solid #c7d2fe',
+                        color: '#4f46e5',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '13px',
+                        fontWeight: 800,
+                      }}
+                    >
+                      <Phone size={13} />
+                      <span>{adm.phone}</span>
+                    </a>
+                  ) : (
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>전화번호 미등록</span>
+                  )}
+                </div>
+              ))}
             </div>
-          </div>
+          )}
           <button
             type="button"
             onClick={() => setIsAdminContactOpen(false)}
             style={{
-              marginTop: '10px',
-              padding: '10px',
+              marginTop: '6px',
+              padding: '12px',
               borderRadius: '10px',
               backgroundColor: '#f1f5f9',
               border: '1.5px solid #cbd5e1',

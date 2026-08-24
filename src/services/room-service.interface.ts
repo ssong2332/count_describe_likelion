@@ -8,18 +8,19 @@ export interface MemberPayload {
   group?: string;
   shiftTime?: string;
   roleNote?: string;
+  isAdmin?: boolean;
 }
 
 export interface IRoomService {
   /**
    * 새 룸 생성
    */
-  createRoom(roomId: string, pin: string, adminName?: string, adminPhone?: string): Promise<Room>;
+  createRoom(roomId: string, pin: string): Promise<Room>;
 
   /**
-   * 관리자 프로필(이름/전화번호) 설정
+   * 1번 요구사항: 룸 내 관리자 멤버 ID 목록 일괄 설정
    */
-  setAdminProfile(roomId: string, adminName: string, adminPhone?: string): Promise<void>;
+  setAdminMembers(roomId: string, memberIds: string[]): Promise<void>;
 
   /**
    * 룸 정보 조회
@@ -52,7 +53,7 @@ export interface IRoomService {
   addMember(roomId: string, payload: MemberPayload | string): Promise<Member>;
 
   /**
-   * 표/텍스트 파싱 결과로 멤버 일괄 등록 (동명이인 1명 통합)
+   * 표/텍스트 파싱 결과로 멤버 일괄 등록
    */
   importScheduleMembers(roomId: string, members: Omit<Member, 'id' | 'isPresent' | 'activeStatus' | 'logs'>[]): Promise<void>;
 

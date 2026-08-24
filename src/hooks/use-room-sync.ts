@@ -8,7 +8,7 @@ export function useRoomSync(roomId: string | null) {
   const [room, setRoom] = useState<Room | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortMode, setSortMode] = useState<ViewSortMode>('grid'); // 기본값: 색상 현황판
+  const [sortMode, setSortMode] = useState<ViewSortMode>('grid');
 
   const roomService = getRoomService();
 
@@ -58,13 +58,13 @@ export function useRoomSync(roomId: string | null) {
     [roomId, roomService]
   );
 
-  const setAdminProfile = useCallback(
-    async (adminName: string, adminPhone?: string) => {
+  const setAdminMembers = useCallback(
+    async (memberIds: string[]) => {
       if (!roomId) return;
       try {
-        await roomService.setAdminProfile(roomId, adminName, adminPhone);
+        await roomService.setAdminMembers(roomId, memberIds);
       } catch (err: any) {
-        setError(err.message || '관리자 프로필 저장 실패');
+        setError(err.message || '관리자 목록 설정 실패');
       }
     },
     [roomId, roomService]
@@ -166,7 +166,7 @@ export function useRoomSync(roomId: string | null) {
     return sortMembersByShiftTime(rawMemberList);
   }, [rawMemberList]);
 
-  // 2번 & 5번 & 6번 요구사항: 시간대 & 전우조 통합 스케줄 블록
+  // 스케줄 블록
   const scheduleBlocks = useMemo(() => {
     return buildScheduleBlocks(rawMemberList);
   }, [rawMemberList]);
@@ -184,7 +184,7 @@ export function useRoomSync(roomId: string | null) {
     setSortMode,
     addMember,
     importScheduleMembers,
-    setAdminProfile,
+    setAdminMembers,
     updateMember,
     updateMemberName,
     deleteMember,

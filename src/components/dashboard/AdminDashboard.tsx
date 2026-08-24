@@ -7,6 +7,7 @@ import { MemberGridTile } from './MemberGridTile';
 import { MemberDetailModal } from './MemberDetailModal';
 import { MemberFormModal } from '../modals/MemberFormModal';
 import { BatchImportModal } from '../modals/BatchImportModal';
+import { AdminManagerModal } from '../modals/AdminManagerModal';
 import { ReasonModal } from '../modals/ReasonModal';
 import { StatusLogDrawer } from '../modals/StatusLogDrawer';
 import { RoomListModal } from '../modals/RoomListModal';
@@ -35,7 +36,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ roomId, onLogout
     setSortMode,
     addMember,
     importScheduleMembers,
-    setAdminProfile,
+    setAdminMembers,
     updateMember,
     deleteMember,
     toggleAttendance,
@@ -43,12 +44,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ roomId, onLogout
     resetDaily,
   } = useRoomSync(roomId);
 
-  // 8번 요구사항: 9분 초과 알림 및 사용자 상태 전환 푸시 알림
-  useAdminNotifications(rawMemberList, true);
+  // 3번 요구사항: 9분 초과 알림 & 비프음 & 시각 배너
+  const { overdueMembers, permissionStatus, requestPermission } = useAdminNotifications(rawMemberList, true);
 
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isBatchImportOpen, setIsBatchImportOpen] = useState(false);
+  const [isAdminManagerOpen, setIsAdminManagerOpen] = useState(false);
   const [isRoomListOpen, setIsRoomListOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
@@ -58,11 +60,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ roomId, onLogout
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  // 9번 요구사항: 관리자 본인 인원 객체 탐색
-  const adminMember = useMemo(() => {
-    if (!room || !room.adminName) return null;
-    return Object.values(room.members).find((m) => m.name === room.adminName) || null;
-  }, [room]);
+  // 1번 요구사항: 등록된 인원 중 관리자로 지정된 인원들
+  const adminMembers = useMemo(() => {
+    return rawMemberList.filter((m) => m.isAdmin);
+  }, [rawMemberList]);
 
   // Handlers
   const handleAddMember = async (payload: MemberPayload) => {
@@ -104,25 +105,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ roomId, onLogout
     setIsResetConfirmOpen(false);
   };
 
-  // 관리자 본인 상태 제어
-  const handleAdminToggleAttendance = async () => {
-    if (adminMember) {
-      await toggleAttendance(adminMember.id);
-    }
-  };
-
-  const handleAdminSetDeparture = async (type: DepartureType, reason?: string) => {
-    if (adminMember) {
-      await handleSetDepartureSafe(adminMember.id, type, reason);
-    }
-  };
-
-  const handleUpdateAdminProfile = async (name: string, phone?: string) => {
-    await setAdminProfile(name, phone);
-    // 관리자 이름의 인원이 없으면 자동 추가
-    if (!Object.values(room?.members || {}).some((m) => m.name === name)) {
-      await addMember({ name, phone, roleNote: '관리자', group: '관리자' });
-    }
+  const handleSaveAdminMembers = async (selectedIds: string[]) => {
+    await setAdminMembers(selectedIds);
   };
 
   // 실시간 갱신된 detailMember 동기화
@@ -144,18 +128,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ roomId, onLogout
       {/* Header & Stats Summary */}
       <SummaryHeader
         roomId={roomId}
-        adminName={room?.adminName}
-        adminPhone={room?.adminPhone}
-        adminMember={adminMember}
+        adminMembers={adminMembers}
+        overdueMembers={overdueMembers}
+        notificationPermission={permissionStatus}
+        onRequestNotificationPermission={requestPermission}
         summary={summary}
         sortMode={sortMode}
         onSetSortMode={setSortMode}
         onOpenAddMember={() => setIsAddModalOpen(true)}
         onOpenBatchImport={() => setIsBatchImportOpen(true)}
         onOpenRoomList={() => setIsRoomListOpen(true)}
-        onUpdateAdminProfile={handleUpdateAdminProfile}
-        onAdminToggleAttendance={handleAdminToggleAttendance}
-        onAdminSetDeparture={handleAdminSetDeparture}
+        onOpenAdminManager={() => setIsAdminManagerOpen(true)}
         onLogout={onLogout}
       />
 
@@ -242,7 +225,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ roomId, onLogout
           </div>
         </div>
       ) : sortMode === 'grid' ? (
-        /* 7번 요구사항: 색상 현황판 4열 고정 */
+        /* 색상 현황판 4열 고정 */
         <div>
           <div style={{ fontSize: '13px', fontWeight: 800, color: '#475569', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>🎨 전체 인원 현황판 ({rawMemberList.length}명)</span>
@@ -251,7 +234,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ roomId, onLogout
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)', // 7번 요구사항: 4열 고정
+              gridTemplateColumns: 'repeat(4, 1fr)',
               gap: '6px',
             }}
           >
@@ -265,7 +248,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ roomId, onLogout
           </div>
         </div>
       ) : sortMode === 'schedule' ? (
-        /* 5번 요구사항: 시간대 & 전우조별 가로 공간 활용, 줄바꿈 최소화 */
+        /* 시간대 & 전우조별 가로 인라인 */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {scheduleBlocks.map((block) => (
             <div
@@ -294,7 +277,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ roomId, onLogout
                 <span>⏰ {block.shiftTime}</span>
               </div>
 
-              {/* 5번 요구사항: 가로 인라인 배치로 줄바꿈 최소화 */}
+              {/* 가로 인라인 배치 */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'flex-start' }}>
                 {block.squads.map((squad) => (
                   <div
@@ -402,6 +385,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ roomId, onLogout
         onConfirmImport={async (imported) => {
           await importScheduleMembers(imported);
         }}
+      />
+
+      {/* 1번 요구사항: 복수 관리자 선택 지정 모달 */}
+      <AdminManagerModal
+        isOpen={isAdminManagerOpen}
+        onClose={() => setIsAdminManagerOpen(false)}
+        members={rawMemberList}
+        adminMemberIds={room?.adminMemberIds || []}
+        onSaveAdminMembers={handleSaveAdminMembers}
       />
 
       <MemberFormModal

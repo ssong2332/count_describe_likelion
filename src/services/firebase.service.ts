@@ -60,7 +60,7 @@ export class FirebaseService implements IRoomService {
     return ref(this.db, `rooms/${cleanId}`);
   }
 
-  async createRoom(roomId: string, pin: string, adminName?: string, adminPhone?: string): Promise<Room> {
+  async createRoom(roomId: string, pin: string): Promise<Room> {
     const cleanId = roomId.trim().toUpperCase();
     const existing = await this.getRoom(cleanId);
     if (existing) return existing;
@@ -68,8 +68,7 @@ export class FirebaseService implements IRoomService {
     const newRoom: Room = {
       roomId: cleanId,
       pin: pin.trim(),
-      adminName: adminName?.trim() || undefined,
-      adminPhone: adminPhone?.trim() || undefined,
+      adminMemberIds: [],
       createdAt: Date.now(),
       members: {},
     };
@@ -78,11 +77,16 @@ export class FirebaseService implements IRoomService {
     return newRoom;
   }
 
-  async setAdminProfile(roomId: string, adminName: string, adminPhone?: string): Promise<void> {
+  async setAdminMembers(roomId: string, memberIds: string[]): Promise<void> {
     if (!this.db) return;
     const cleanId = roomId.trim().toUpperCase();
-    await set(ref(this.db, `rooms/${cleanId}/adminName`), adminName.trim() || null);
-    await set(ref(this.db, `rooms/${cleanId}/adminPhone`), adminPhone?.trim() || null);
+    await set(ref(this.db, `rooms/${cleanId}/adminMemberIds`), memberIds);
+    const room = await this.getRoom(cleanId);
+    if (room) {
+      for (const id of Object.keys(room.members)) {
+        await set(ref(this.db, `rooms/${cleanId}/members/${id}/isAdmin`), memberIds.includes(id));
+      }
+    }
   }
 
   async getRoom(roomId: string): Promise<Room | null> {
@@ -93,6 +97,7 @@ export class FirebaseService implements IRoomService {
     return {
       ...val,
       members: val.members || {},
+      adminMemberIds: val.adminMemberIds || [],
     } as Room;
   }
 
@@ -143,6 +148,7 @@ export class FirebaseService implements IRoomService {
         callback({
           ...val,
           members: val.members || {},
+          adminMemberIds: val.adminMemberIds || [],
         } as Room);
       },
       (err: any) => {
@@ -164,13 +170,19 @@ export class FirebaseService implements IRoomService {
     const group = typeof payload === 'object' ? payload.group : undefined;
     const shiftTime = typeof payload === 'object' ? payload.shiftTime : undefined;
     const roleNote = typeof payload === 'object' ? payload.roleNote : undefined;
+    const isAdmin = typeof payload === 'object' ? payload.isAdmin : false;
 
     const memberId = `m_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const newMember = createDefaultMember(memberId, name, phone, group, shiftTime, roleNote);
+    const newMember = createDefaultMember(memberId, name, phone, group, shiftTime, roleNote, isAdmin);
 
     if (!this.db) throw new Error('Firebase가 연결되지 않았습니다.');
     const memberRef = ref(this.db, `rooms/${room.roomId}/members/${memberId}`);
     await set(memberRef, newMember);
+
+    if (isAdmin) {
+      const updatedAdmins = Array.from(new Set([...(room.adminMemberIds || []), memberId]));
+      await set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), updatedAdmins);
+    }
 
     return newMember;
   }
@@ -180,7 +192,9 @@ export class FirebaseService implements IRoomService {
     if (!room) throw new Error('방을 찾을 수 없습니다.');
 
     const updatedMembers: Record<string, Member> = { ...room.members };
+    const newAdminIds: string[] = [...(room.adminMemberIds || [])];
     let count = 1;
+
     for (const item of members) {
       const memberId = `m_${Date.now()}_${count++}_${Math.random().toString(36).substring(2, 5)}`;
       updatedMembers[memberId] = createDefaultMember(
@@ -189,13 +203,17 @@ export class FirebaseService implements IRoomService {
         item.phone,
         item.group,
         item.shiftTime,
-        item.roleNote
+        item.roleNote,
+        item.isAdmin
       );
+      if (item.isAdmin) {
+        newAdminIds.push(memberId);
+      }
     }
 
     if (!this.db) throw new Error('Firebase가 연결되지 않았습니다.');
-    const membersRef = ref(this.db, `rooms/${room.roomId}/members`);
-    await set(membersRef, updatedMembers);
+    await set(ref(this.db, `rooms/${room.roomId}/members`), updatedMembers);
+    await set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), Array.from(new Set(newAdminIds)));
   }
 
   async updateMember(roomId: string, memberId: string, payload: MemberPayload): Promise<void> {
@@ -203,6 +221,8 @@ export class FirebaseService implements IRoomService {
     if (!room || !room.members[memberId]) throw new Error('인원을 찾을 수 없습니다.');
 
     const current = room.members[memberId];
+    const isAdmin = payload.isAdmin !== undefined ? payload.isAdmin : current.isAdmin;
+
     const updated = {
       ...current,
       name: payload.name.trim(),
@@ -210,11 +230,19 @@ export class FirebaseService implements IRoomService {
       group: payload.group?.trim() || undefined,
       shiftTime: payload.shiftTime?.trim() || undefined,
       roleNote: payload.roleNote?.trim() || undefined,
+      isAdmin,
     };
 
     if (!this.db) throw new Error('Firebase가 연결되지 않았습니다.');
-    const memberRef = ref(this.db, `rooms/${room.roomId}/members/${memberId}`);
-    await set(memberRef, updated);
+    await set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), updated);
+
+    let updatedAdmins = room.adminMemberIds || [];
+    if (isAdmin) {
+      updatedAdmins = Array.from(new Set([...updatedAdmins, memberId]));
+    } else {
+      updatedAdmins = updatedAdmins.filter((id) => id !== memberId);
+    }
+    await set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), updatedAdmins);
   }
 
   async updateMemberName(roomId: string, memberId: string, name: string): Promise<void> {
@@ -226,8 +254,9 @@ export class FirebaseService implements IRoomService {
     if (!room || !room.members[memberId]) return;
 
     if (!this.db) throw new Error('Firebase가 연결되지 않았습니다.');
-    const memberRef = ref(this.db, `rooms/${room.roomId}/members/${memberId}`);
-    await set(memberRef, null);
+    await set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), null);
+    const updatedAdmins = (room.adminMemberIds || []).filter((id) => id !== memberId);
+    await set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), updatedAdmins);
   }
 
   async toggleAttendance(roomId: string, memberId: string): Promise<void> {
@@ -236,8 +265,7 @@ export class FirebaseService implements IRoomService {
 
     const updated = toggleAttendance(room.members[memberId]);
     if (!this.db) throw new Error('Firebase가 연결되지 않았습니다.');
-    const memberRef = ref(this.db, `rooms/${room.roomId}/members/${memberId}`);
-    await set(memberRef, updated);
+    await set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), updated);
   }
 
   async checkIn(roomId: string, memberId: string): Promise<void> {
@@ -246,8 +274,7 @@ export class FirebaseService implements IRoomService {
 
     const updated = markPresent(room.members[memberId]);
     if (!this.db) throw new Error('Firebase가 연결되지 않았습니다.');
-    const memberRef = ref(this.db, `rooms/${room.roomId}/members/${memberId}`);
-    await set(memberRef, updated);
+    await set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), updated);
   }
 
   async setDeparture(
@@ -263,16 +290,14 @@ export class FirebaseService implements IRoomService {
     if (current.activeStatus === type) {
       const updated = endDeparture(current);
       if (!this.db) throw new Error('Firebase가 연결되지 않았습니다.');
-      const memberRef = ref(this.db, `rooms/${room.roomId}/members/${memberId}`);
-      await set(memberRef, updated);
+      await set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), updated);
     } else {
       const res = startDeparture(current, type, reason);
       if (res.error) {
         throw new Error(res.error);
       }
       if (!this.db) throw new Error('Firebase가 연결되지 않았습니다.');
-      const memberRef = ref(this.db, `rooms/${room.roomId}/members/${memberId}`);
-      await set(memberRef, res.member);
+      await set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), res.member);
     }
   }
 
@@ -286,7 +311,6 @@ export class FirebaseService implements IRoomService {
     }
 
     if (!this.db) throw new Error('Firebase가 연결되지 않았습니다.');
-    const membersRef = ref(this.db, `rooms/${room.roomId}/members`);
-    await set(membersRef, updatedMembers);
+    await set(ref(this.db, `rooms/${room.roomId}/members`), updatedMembers);
   }
 }

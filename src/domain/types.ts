@@ -13,9 +13,10 @@ export interface Member {
   id: string;
   name: string;
   phone?: string;          // 전화번호
-  group?: string;          // 전우조 / 조 명칭
+  group?: string;          // 전우조 (예: 전우조1, 전우조2 등)
   shiftTime?: string;      // 부스 운영 시간대 (예: 12:00 ~ 13:05)
-  roleNote?: string;       // 역할 메모 (메인 운영진, 아기사자 등)
+  isAdmin?: boolean;       // 1번 & 2번 요구사항: 운영진(관리자) 여부
+  roleNote?: string;       // 역할 메모
   isPresent: boolean;      // 출석 여부 (1단계)
   activeStatus: DepartureType;
   activeReason?: string;
@@ -26,8 +27,7 @@ export interface Member {
 export interface Room {
   roomId: string;
   pin: string;
-  adminName?: string;      // 관리자 본인 이름
-  adminPhone?: string;     // 관리자 전화번호 (사용자에게 공개)
+  adminMemberIds?: string[]; // 1번 요구사항: 복수 관리자 ID 목록
   createdAt: number;
   members: Record<string, Member>;
 }

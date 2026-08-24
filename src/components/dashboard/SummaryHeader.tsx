@@ -1,55 +1,41 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { SummaryStats } from '../../domain/member-logic';
-import { DepartureType, Member, ViewSortMode } from '../../domain/types';
-import { Users, CheckCircle2, UserX, Clock, Cigarette, HelpCircle, LayoutGrid, Calendar, ListFilter, Settings } from 'lucide-react';
-import { Modal } from '../common/Modal';
+import { Member, ViewSortMode } from '../../domain/types';
+import { Users, CheckCircle2, UserX, Clock, Cigarette, HelpCircle, LayoutGrid, Calendar, ListFilter, ShieldCheck, Bell, AlertTriangle } from 'lucide-react';
 
 interface SummaryHeaderProps {
   roomId: string;
-  adminName?: string;
-  adminPhone?: string;
-  adminMember?: Member | null;
+  adminMembers: Member[];
+  overdueMembers: Member[];
+  notificationPermission: NotificationPermission;
+  onRequestNotificationPermission: () => void;
   summary: SummaryStats;
   sortMode: ViewSortMode;
   onSetSortMode: (mode: ViewSortMode) => void;
   onOpenAddMember: () => void;
   onOpenBatchImport: () => void;
   onOpenRoomList: () => void;
-  onUpdateAdminProfile: (name: string, phone?: string) => Promise<void>;
-  onAdminSetDeparture: (type: DepartureType, reason?: string) => void;
-  onAdminToggleAttendance: () => void;
+  onOpenAdminManager: () => void;
   onLogout: () => void;
 }
 
 export const SummaryHeader: React.FC<SummaryHeaderProps> = ({
   roomId,
-  adminName,
-  adminPhone,
-  adminMember,
+  adminMembers,
+  overdueMembers,
+  notificationPermission,
+  onRequestNotificationPermission,
   summary,
   sortMode,
   onSetSortMode,
   onOpenAddMember,
   onOpenBatchImport,
   onOpenRoomList,
-  onUpdateAdminProfile,
-  onAdminSetDeparture,
-  onAdminToggleAttendance,
+  onOpenAdminManager,
   onLogout,
 }) => {
-  const [isAdminProfileOpen, setIsAdminProfileOpen] = useState(false);
-  const [profileName, setProfileName] = useState(adminName || '');
-  const [profilePhone, setProfilePhone] = useState(adminPhone || '');
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!profileName.trim()) return;
-    await onUpdateAdminProfile(profileName.trim(), profilePhone.trim());
-    setIsAdminProfileOpen(false);
-  };
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '14px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
       {/* Top Bar */}
       <div
         style={{
@@ -134,7 +120,7 @@ export const SummaryHeader: React.FC<SummaryHeaderProps> = ({
         </div>
       </div>
 
-      {/* 9번 요구사항: 관리자 본인 상태 제어 바 */}
+      {/* 1번 요구사항: 관리자(운영진) 목록 관리 바 */}
       <div
         style={{
           display: 'flex',
@@ -147,89 +133,109 @@ export const SummaryHeader: React.FC<SummaryHeaderProps> = ({
           boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 900, color: '#0f172a' }}>
-            👑 내 상태 ({adminName || '관리자'})
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '13px', fontWeight: 900, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <ShieldCheck size={16} color="#4f46e5" /> 관리자(운영진):
+          </span>
+          {adminMembers.length === 0 ? (
+            <span style={{ fontSize: '12px', color: '#94a3b8' }}>미지정 (인원 중 선택 필요)</span>
+          ) : (
+            adminMembers.map((m) => (
+              <span
+                key={m.id}
+                style={{
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  color: '#4f46e5',
+                  backgroundColor: '#eef2ff',
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                }}
+              >
+                👑 {m.name}
+              </span>
+            ))
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={onOpenAdminManager}
+          style={{
+            padding: '5px 10px',
+            borderRadius: '8px',
+            backgroundColor: '#f8fafc',
+            border: '1.5px solid #cbd5e1',
+            color: '#334155',
+            fontSize: '12px',
+            fontWeight: 800,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          관리자 지정 변경
+        </button>
+      </div>
+
+      {/* 3번 요구사항: 9분 초과 경고 실시간 배너 */}
+      {overdueMembers.length > 0 && (
+        <div
+          style={{
+            padding: '10px 14px',
+            backgroundColor: '#fef2f2',
+            border: '2px solid #ef4444',
+            borderRadius: '12px',
+            color: '#b91c1c',
+            fontSize: '13px',
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.2)',
+            animation: 'pulse 1.5s infinite',
+          }}
+        >
+          <AlertTriangle size={20} color="#ef4444" />
+          <div>
+            <strong>🚨 9분 초과 자리비움 경고!</strong> {overdueMembers.map((m) => `${m.name} (${m.activeStatus === 'toilet' ? '화장실' : m.activeStatus === 'smoking' ? '흡연' : '기타'})`).join(', ')}
+          </div>
+        </div>
+      )}
+
+      {/* 알림 권한 요청 배너 */}
+      {notificationPermission === 'default' && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '8px 12px',
+            backgroundColor: '#fffbeb',
+            border: '1.5px solid #fde68a',
+            borderRadius: '10px',
+            color: '#b45309',
+            fontSize: '12px',
+            fontWeight: 700,
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Bell size={14} /> 9분 초과 및 상태 전환 푸시 알림을 받으시겠습니까?
           </span>
           <button
             type="button"
-            onClick={() => setIsAdminProfileOpen(true)}
-            style={{ color: '#64748b', padding: '2px' }}
-            title="관리자 프로필 및 전화번호 설정"
+            onClick={onRequestNotificationPermission}
+            style={{
+              padding: '4px 8px',
+              borderRadius: '6px',
+              backgroundColor: '#d97706',
+              color: '#ffffff',
+              fontSize: '11px',
+              fontWeight: 800,
+            }}
           >
-            <Settings size={14} />
+            알림 켜기
           </button>
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {adminMember ? (
-            <>
-              <button
-                type="button"
-                onClick={onAdminToggleAttendance}
-                style={{
-                  padding: '4px 8px',
-                  borderRadius: '6px',
-                  backgroundColor: adminMember.isPresent ? '#ecfdf5' : '#f1f5f9',
-                  color: adminMember.isPresent ? '#059669' : '#64748b',
-                  border: `1px solid ${adminMember.isPresent ? '#a7f3d0' : '#cbd5e1'}`,
-                  fontSize: '11px',
-                  fontWeight: 800,
-                }}
-              >
-                {adminMember.isPresent ? '출석됨' : '미출석'}
-              </button>
-              {adminMember.isPresent && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => onAdminSetDeparture('toilet')}
-                    style={{
-                      padding: '4px 8px',
-                      borderRadius: '6px',
-                      backgroundColor: adminMember.activeStatus === 'toilet' ? '#0284c7' : '#f0f9ff',
-                      color: adminMember.activeStatus === 'toilet' ? '#ffffff' : '#0284c7',
-                      fontSize: '11px',
-                      fontWeight: 800,
-                    }}
-                  >
-                    {adminMember.activeStatus === 'toilet' ? '화장실(OFF)' : '화장실'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onAdminSetDeparture('smoking')}
-                    style={{
-                      padding: '4px 8px',
-                      borderRadius: '6px',
-                      backgroundColor: adminMember.activeStatus === 'smoking' ? '#d97706' : '#fffbeb',
-                      color: adminMember.activeStatus === 'smoking' ? '#ffffff' : '#d97706',
-                      fontSize: '11px',
-                      fontWeight: 800,
-                    }}
-                  >
-                    {adminMember.activeStatus === 'smoking' ? '흡연(OFF)' : '흡연'}
-                  </button>
-                </>
-              )}
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsAdminProfileOpen(true)}
-              style={{
-                fontSize: '11px',
-                color: '#4f46e5',
-                fontWeight: 700,
-                backgroundColor: '#eef2ff',
-                padding: '3px 8px',
-                borderRadius: '6px',
-              }}
-            >
-              + 관리자 이름/연락처 등록
-            </button>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Summary Stat Cards */}
       <div
@@ -345,7 +351,7 @@ export const SummaryHeader: React.FC<SummaryHeaderProps> = ({
         </div>
       </div>
 
-      {/* 4번 요구사항: 일괄 등록 모달 버튼 */}
+      {/* 일괄 등록 모달 버튼 */}
       {summary.total === 0 && (
         <button
           type="button"
@@ -441,93 +447,6 @@ export const SummaryHeader: React.FC<SummaryHeaderProps> = ({
           <span>상세 목록</span>
         </button>
       </div>
-
-      {/* Admin Profile Modal */}
-      <Modal
-        isOpen={isAdminProfileOpen}
-        onClose={() => setIsAdminProfileOpen(false)}
-        title="관리자 본인 정보 설정"
-      >
-        <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div>
-            <label style={{ fontSize: '13px', fontWeight: 800, color: '#475569', display: 'block', marginBottom: '6px' }}>
-              관리자 본인 이름
-            </label>
-            <input
-              type="text"
-              placeholder="예: 관리자A"
-              value={profileName}
-              onChange={(e) => setProfileName(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                backgroundColor: '#f8fafc',
-                border: '2px solid #cbd5e1',
-                borderRadius: '10px',
-                color: '#0f172a',
-                fontSize: '14px',
-                fontWeight: 700,
-                outline: 'none',
-              }}
-              required
-            />
-          </div>
-
-          <div>
-            <label style={{ fontSize: '13px', fontWeight: 800, color: '#475569', display: 'block', marginBottom: '6px' }}>
-              관리자 전화번호 (사용자에게 공개)
-            </label>
-            <input
-              type="tel"
-              placeholder="예: 010-1234-5678"
-              value={profilePhone}
-              onChange={(e) => setProfilePhone(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                backgroundColor: '#f8fafc',
-                border: '2px solid #cbd5e1',
-                borderRadius: '10px',
-                color: '#0f172a',
-                fontSize: '14px',
-                fontWeight: 700,
-                outline: 'none',
-              }}
-            />
-          </div>
-
-          <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
-            <button
-              type="button"
-              onClick={() => setIsAdminProfileOpen(false)}
-              style={{
-                flex: 1,
-                padding: '12px',
-                borderRadius: '10px',
-                backgroundColor: '#f1f5f9',
-                border: '1.5px solid #cbd5e1',
-                color: '#475569',
-                fontWeight: 800,
-              }}
-            >
-              취소
-            </button>
-            <button
-              type="submit"
-              style={{
-                flex: 1,
-                padding: '12px',
-                borderRadius: '10px',
-                backgroundColor: '#4f46e5',
-                color: '#ffffff',
-                fontWeight: 900,
-              }}
-            >
-              저장하기
-            </button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 };

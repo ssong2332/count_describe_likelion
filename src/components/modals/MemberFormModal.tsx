@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { Member } from '../../domain/types';
 import { MemberPayload } from '../../services/room-service.interface';
-import { Users, Clock, Phone, User } from 'lucide-react';
+import { Users, Clock, Phone, User, ShieldCheck } from 'lucide-react';
 
 interface MemberFormModalProps {
   isOpen: boolean;
@@ -11,8 +11,8 @@ interface MemberFormModalProps {
   editingMember?: Member | null;
 }
 
-// 3번 요구사항: 사용자가 전달한 실제 시간표 내용으로 프리셋 교체
-const PRESET_GROUPS = ['메인 운영진', '전우조1', '전우조2', '전원'];
+// 2번 요구사항: 메인 운영진, 전원 제거하고 일반 조만 프리셋으로 제공
+const PRESET_GROUPS = ['전우조1', '전우조2', '기획조', '운영조'];
 const PRESET_SHIFTS = [
   '12:00 ~ 13:05',
   '13:00 ~ 14:05',
@@ -32,6 +32,7 @@ export const MemberFormModal: React.FC<MemberFormModalProps> = ({
   const [phone, setPhone] = useState('');
   const [group, setGroup] = useState('');
   const [shiftTime, setShiftTime] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,11 +42,13 @@ export const MemberFormModal: React.FC<MemberFormModalProps> = ({
       setPhone(editingMember.phone || '');
       setGroup(editingMember.group || '');
       setShiftTime(editingMember.shiftTime || '');
+      setIsAdmin(!!editingMember.isAdmin);
     } else {
       setName('');
       setPhone('');
       setGroup('');
       setShiftTime('');
+      setIsAdmin(false);
     }
     setError(null);
   }, [editingMember, isOpen]);
@@ -65,6 +68,7 @@ export const MemberFormModal: React.FC<MemberFormModalProps> = ({
         phone: phone.trim() || undefined,
         group: group.trim() || undefined,
         shiftTime: shiftTime.trim() || undefined,
+        isAdmin,
       });
       onClose();
     } catch (err: any) {
@@ -107,6 +111,56 @@ export const MemberFormModal: React.FC<MemberFormModalProps> = ({
           />
         </div>
 
+        {/* 2번 요구사항: 운영진(관리자) 여부 토글 버튼 */}
+        <div
+          onClick={() => setIsAdmin(!isAdmin)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 14px',
+            borderRadius: '12px',
+            backgroundColor: isAdmin ? '#eef2ff' : '#f8fafc',
+            border: `2px solid ${isAdmin ? '#4f46e5' : '#cbd5e1'}`,
+            cursor: 'pointer',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <ShieldCheck size={18} color={isAdmin ? '#4f46e5' : '#64748b'} />
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 900, color: isAdmin ? '#4f46e5' : '#334155' }}>
+                👑 운영진(관리자) 지정
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>
+                사용자에게 관리자 연락처로 제공되며 관리자 PIN으로 입장합니다.
+              </div>
+            </div>
+          </div>
+          <div
+            style={{
+              width: '42px',
+              height: '24px',
+              borderRadius: '12px',
+              backgroundColor: isAdmin ? '#4f46e5' : '#cbd5e1',
+              display: 'flex',
+              alignItems: 'center',
+              padding: '2px',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <div
+              style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                backgroundColor: '#ffffff',
+                transform: isAdmin ? 'translateX(18px)' : 'translateX(0)',
+                transition: 'all 0.2s ease',
+              }}
+            />
+          </div>
+        </div>
+
         {/* Phone Number */}
         <div>
           <label style={{ fontSize: '13px', color: '#475569', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
@@ -131,7 +185,7 @@ export const MemberFormModal: React.FC<MemberFormModalProps> = ({
           />
         </div>
 
-        {/* Squad / Group */}
+        {/* Squad / Group (메인 운영진, 전원 제거됨) */}
         <div>
           <label style={{ fontSize: '13px', color: '#475569', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
             <Users size={15} /> 전우조 (조 명칭)
@@ -158,7 +212,7 @@ export const MemberFormModal: React.FC<MemberFormModalProps> = ({
           </div>
           <input
             type="text"
-            placeholder="직접 입력 (예: 메인 운영진, 전우조1 등)"
+            placeholder="직접 입력 (예: 전우조1, 기획조 등)"
             value={group}
             onChange={(e) => setGroup(e.target.value)}
             style={{

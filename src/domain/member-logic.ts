@@ -6,7 +6,8 @@ export function createDefaultMember(
   phone?: string,
   group?: string,
   shiftTime?: string,
-  roleNote?: string
+  roleNote?: string,
+  isAdmin?: boolean
 ): Member {
   return {
     id,
@@ -15,6 +16,7 @@ export function createDefaultMember(
     group: group?.trim() || undefined,
     shiftTime: shiftTime?.trim() || undefined,
     roleNote: roleNote?.trim() || undefined,
+    isAdmin: !!isAdmin,
     isPresent: false, // 기본값은 미출석 (1단계 출석 필요)
     activeStatus: 'none',
     logs: [],
@@ -174,9 +176,8 @@ export interface ScheduleBlock {
   }[];
 }
 
-// 6번 요구사항: 동명이인이 없는 가정 -> 고유 인원(18명)으로 파싱하되 시간대별 스케줄 구조 생성
+// 스케줄 블록 빌더
 export function buildScheduleBlocks(members: Member[]): ScheduleBlock[] {
-  // 정의된 표준 시간대 순서
   const standardShifts = [
     '12:00 ~ 13:05',
     '13:00 ~ 14:05',
@@ -190,7 +191,7 @@ export function buildScheduleBlocks(members: Member[]): ScheduleBlock[] {
 
   for (const m of members) {
     const shifts = m.shiftTime ? m.shiftTime.split(',').map((s) => s.trim()) : ['시간 미지정'];
-    const squad = m.group || '조 미지정';
+    const squad = m.isAdmin ? '👑 운영진' : (m.group || '조 미지정');
 
     for (const shift of shifts) {
       if (!shiftMap[shift]) {
@@ -218,7 +219,7 @@ export function buildScheduleBlocks(members: Member[]): ScheduleBlock[] {
   });
 }
 
-// 4번 & 6번 요구사항: 텍스트/표 파서 (동명이인은 1명의 고유 멤버로 통합)
+// 표 파서 (동명이인은 1명의 고유 멤버로 통합 & 메인 운영진은 isAdmin: true 처리)
 export function parseScheduleTextToMembers(rawText: string): Omit<Member, 'id' | 'isPresent' | 'activeStatus' | 'logs'>[] {
   const memberMap: Map<string, {
     name: string;
@@ -226,17 +227,16 @@ export function parseScheduleTextToMembers(rawText: string): Omit<Member, 'id' |
     groupList: Set<string>;
     shiftList: Set<string>;
     roleNote?: string;
+    isAdmin?: boolean;
   }> = new Map();
 
   const lines = rawText.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
 
   for (const line of lines) {
-    // 헤더 행 또는 구분선 제외
-    if (line.startsWith('---') || line.includes('시간대') && line.includes('메인')) {
+    if (line.startsWith('---') || (line.includes('시간대') && line.includes('메인'))) {
       continue;
     }
 
-    // 탭 또는 공백(2개 이상), 쉼표, 파이프('|') 분리
     let parts: string[] = [];
     if (line.includes('\t')) {
       parts = line.split('\t').map((p) => p.trim());
@@ -248,7 +248,6 @@ export function parseScheduleTextToMembers(rawText: string): Omit<Member, 'id' |
 
     if (parts.length >= 2) {
       const shiftRaw = parts[0];
-      // 시간대 표준화
       let shift = shiftRaw;
       if (shiftRaw.includes('12시')) shift = '12:00 ~ 13:05';
       else if (shiftRaw.includes('1시')) shift = '13:00 ~ 14:05';
@@ -261,41 +260,43 @@ export function parseScheduleTextToMembers(rawText: string): Omit<Member, 'id' |
       const squad1 = parts[3] || '';
       const squad2 = parts[4] || '';
 
-      const addPerson = (name: string, group: string, role: string) => {
+      const addPerson = (name: string, group: string, role: string, isAdmin: boolean) => {
         const cleanName = name.trim();
         if (!cleanName || cleanName === '전원') return;
         if (!memberMap.has(cleanName)) {
           memberMap.set(cleanName, {
             name: cleanName,
-            groupList: new Set([group]),
+            groupList: new Set(group ? [group] : []),
             shiftList: new Set([shift]),
             roleNote: role,
+            isAdmin,
           });
         } else {
           const existing = memberMap.get(cleanName)!;
-          existing.groupList.add(group);
+          if (group) existing.groupList.add(group);
           existing.shiftList.add(shift);
+          if (isAdmin) existing.isAdmin = true;
         }
       };
 
-      if (mainAdmin) addPerson(mainAdmin, '메인 운영진', '메인 운영진');
+      if (mainAdmin) addPerson(mainAdmin, '', '메인 운영진', true);
       if (squad1) {
-        squad1.split(',').forEach((n) => addPerson(n, `전우조1 (${squad1.trim()})`, '아기사자'));
+        squad1.split(',').forEach((n) => addPerson(n, `전우조1 (${squad1.trim()})`, '아기사자', false));
       }
       if (squad2) {
-        squad2.split(',').forEach((n) => addPerson(n, `전우조2 (${squad2.trim()})`, '아기사자'));
+        squad2.split(',').forEach((n) => addPerson(n, `전우조2 (${squad2.trim()})`, '아기사자', false));
       }
     }
   }
 
-  // 18명의 고유 멤버 배열로 변환
   const result: Omit<Member, 'id' | 'isPresent' | 'activeStatus' | 'logs'>[] = [];
   memberMap.forEach((val) => {
     result.push({
       name: val.name,
-      group: Array.from(val.groupList)[0], // 대표 조
+      group: Array.from(val.groupList)[0] || undefined,
       shiftTime: Array.from(val.shiftList).join(', '),
       roleNote: val.roleNote,
+      isAdmin: val.isAdmin,
     });
   });
 

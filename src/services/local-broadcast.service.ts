@@ -76,7 +76,7 @@ export class LocalBroadcastService implements IRoomService {
     }
   }
 
-  async createRoom(roomId: string, pin: string, adminName?: string, adminPhone?: string): Promise<Room> {
+  async createRoom(roomId: string, pin: string): Promise<Room> {
     const cleanId = roomId.trim().toUpperCase();
     const existing = this.readRoom(cleanId);
     if (existing) {
@@ -86,8 +86,7 @@ export class LocalBroadcastService implements IRoomService {
     const newRoom: Room = {
       roomId: cleanId,
       pin: pin.trim(),
-      adminName: adminName?.trim() || undefined,
-      adminPhone: adminPhone?.trim() || undefined,
+      adminMemberIds: [],
       createdAt: Date.now(),
       members: {},
     };
@@ -96,11 +95,14 @@ export class LocalBroadcastService implements IRoomService {
     return newRoom;
   }
 
-  async setAdminProfile(roomId: string, adminName: string, adminPhone?: string): Promise<void> {
+  async setAdminMembers(roomId: string, memberIds: string[]): Promise<void> {
     const room = this.readRoom(roomId);
     if (!room) return;
-    room.adminName = adminName.trim() || undefined;
-    room.adminPhone = adminPhone?.trim() || undefined;
+    room.adminMemberIds = memberIds;
+    // 멤버별 isAdmin 플래그 동기화
+    for (const [id, m] of Object.entries(room.members)) {
+      m.isAdmin = memberIds.includes(id);
+    }
     this.saveRoom(room);
   }
 
@@ -172,11 +174,15 @@ export class LocalBroadcastService implements IRoomService {
     const group = typeof payload === 'object' ? payload.group : undefined;
     const shiftTime = typeof payload === 'object' ? payload.shiftTime : undefined;
     const roleNote = typeof payload === 'object' ? payload.roleNote : undefined;
+    const isAdmin = typeof payload === 'object' ? payload.isAdmin : false;
 
     const memberId = `m_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const newMember = createDefaultMember(memberId, name, phone, group, shiftTime, roleNote);
+    const newMember = createDefaultMember(memberId, name, phone, group, shiftTime, roleNote, isAdmin);
 
     room.members[memberId] = newMember;
+    if (isAdmin) {
+      room.adminMemberIds = Array.from(new Set([...(room.adminMemberIds || []), memberId]));
+    }
     this.saveRoom(room);
     return newMember;
   }
@@ -186,6 +192,8 @@ export class LocalBroadcastService implements IRoomService {
     if (!room) throw new Error('방을 찾을 수 없습니다.');
 
     let count = 1;
+    const newAdminIds: string[] = [...(room.adminMemberIds || [])];
+
     for (const item of members) {
       const memberId = `m_${Date.now()}_${count++}_${Math.random().toString(36).substring(2, 5)}`;
       room.members[memberId] = createDefaultMember(
@@ -194,10 +202,15 @@ export class LocalBroadcastService implements IRoomService {
         item.phone,
         item.group,
         item.shiftTime,
-        item.roleNote
+        item.roleNote,
+        item.isAdmin
       );
+      if (item.isAdmin) {
+        newAdminIds.push(memberId);
+      }
     }
 
+    room.adminMemberIds = Array.from(new Set(newAdminIds));
     this.saveRoom(room);
   }
 
@@ -206,6 +219,8 @@ export class LocalBroadcastService implements IRoomService {
     if (!room || !room.members[memberId]) throw new Error('인원을 찾을 수 없습니다.');
 
     const current = room.members[memberId];
+    const isAdmin = payload.isAdmin !== undefined ? payload.isAdmin : current.isAdmin;
+
     room.members[memberId] = {
       ...current,
       name: payload.name.trim(),
@@ -213,7 +228,15 @@ export class LocalBroadcastService implements IRoomService {
       group: payload.group?.trim() || undefined,
       shiftTime: payload.shiftTime?.trim() || undefined,
       roleNote: payload.roleNote?.trim() || undefined,
+      isAdmin,
     };
+
+    if (isAdmin) {
+      room.adminMemberIds = Array.from(new Set([...(room.adminMemberIds || []), memberId]));
+    } else {
+      room.adminMemberIds = (room.adminMemberIds || []).filter((id) => id !== memberId);
+    }
+
     this.saveRoom(room);
   }
 
@@ -226,6 +249,7 @@ export class LocalBroadcastService implements IRoomService {
     if (!room || !room.members[memberId]) return;
 
     delete room.members[memberId];
+    room.adminMemberIds = (room.adminMemberIds || []).filter((id) => id !== memberId);
     this.saveRoom(room);
   }
 
