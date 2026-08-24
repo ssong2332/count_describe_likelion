@@ -24,21 +24,46 @@ export class FirebaseService implements IRoomService {
   private db: Database | null = null;
 
   constructor(config?: Record<string, string>) {
-    const apiKey = config?.apiKey || import.meta.env.VITE_FIREBASE_API_KEY;
-    const databaseURL = config?.databaseURL || import.meta.env.VITE_FIREBASE_DATABASE_URL;
-    const projectId = config?.projectId || import.meta.env.VITE_FIREBASE_PROJECT_ID;
+    const apiKey =
+      config?.apiKey ||
+      import.meta.env.VITE_FIREBASE_API_KEY ||
+      'AIzaSyC70Q-6G5fu9Fv4-tPSYZ6QfwnUyw36rgE';
+    const authDomain =
+      config?.authDomain ||
+      import.meta.env.VITE_FIREBASE_AUTH_DOMAIN ||
+      'countlikelion.firebaseapp.com';
+    const databaseURL =
+      config?.databaseURL ||
+      import.meta.env.VITE_FIREBASE_DATABASE_URL ||
+      'https://countlikelion-default-rtdb.asia-southeast1.firebasedatabase.app';
+    const projectId =
+      config?.projectId ||
+      import.meta.env.VITE_FIREBASE_PROJECT_ID ||
+      'countlikelion';
+    const storageBucket =
+      config?.storageBucket ||
+      import.meta.env.VITE_FIREBASE_STORAGE_BUCKET ||
+      'countlikelion.firebasestorage.app';
+    const messagingSenderId =
+      config?.messagingSenderId ||
+      import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID ||
+      '159250604563';
+    const appId =
+      config?.appId ||
+      import.meta.env.VITE_FIREBASE_APP_ID ||
+      '1:159250604563:web:61fbd232f2a4e9eb7d15e6';
 
     if (apiKey && databaseURL) {
       try {
         if (!getApps().length) {
           this.app = initializeApp({
             apiKey,
-            authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+            authDomain,
             databaseURL,
             projectId,
-            storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-            messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-            appId: import.meta.env.VITE_FIREBASE_APP_ID,
+            storageBucket,
+            messagingSenderId,
+            appId,
           });
         } else {
           this.app = getApps()[0];
