@@ -1,7 +1,7 @@
 import React from 'react';
 import { SummaryStats } from '../../domain/member-logic';
 import { Member, ViewSortMode } from '../../domain/types';
-import { Users, CheckCircle2, UserX, Clock, Cigarette, HelpCircle, LayoutGrid, Calendar, ListFilter, ShieldCheck, Bell, AlertTriangle } from 'lucide-react';
+import { Users, CheckCircle2, UserX, Clock, Cigarette, HelpCircle, LayoutGrid, Calendar, ShieldCheck, Bell, AlertTriangle } from 'lucide-react';
 
 interface SummaryHeaderProps {
   roomId: string;
@@ -38,99 +38,102 @@ export const SummaryHeader: React.FC<SummaryHeaderProps> = ({
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
-      {/* Top Bar */}
+      {/* Top Bar (모바일 반응형 한 줄 최적화) */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '4px 0',
+          padding: '2px 0',
+          gap: '8px',
         }}
       >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#0f172a' }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 900, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {roomId}
             </h2>
             <span
               style={{
-                fontSize: '11px',
-                padding: '2px 8px',
+                fontSize: '10px',
+                padding: '2px 6px',
                 borderRadius: '6px',
                 backgroundColor: '#eef2ff',
                 color: '#4f46e5',
                 fontWeight: 800,
                 border: '1px solid #c7d2fe',
+                whiteSpace: 'nowrap',
               }}
             >
-              관리자 모드
+              관리자
             </span>
           </div>
-          <p style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-            실시간 출결 & 9분 초과 알림 모니터링
+          <p style={{ fontSize: '11px', color: '#64748b', marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            실시간 출결 & 9분 알림
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '6px' }}>
-          <button
-            type="button"
-            onClick={onOpenRoomList}
-            style={{
-              padding: '8px 10px',
-              borderRadius: '10px',
-              backgroundColor: '#f1f5f9',
-              border: '1.5px solid #cbd5e1',
-              color: '#334155',
-              fontSize: '12px',
-              fontWeight: 800,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '3px',
-            }}
-            title="룸 목록 관리"
-          >
-            <ListFilter size={13} /> 룸 목록
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
           <button
             onClick={onOpenAddMember}
             style={{
-              padding: '8px 12px',
-              borderRadius: '10px',
+              padding: '7px 10px',
+              borderRadius: '9px',
               backgroundColor: '#4f46e5',
               color: '#ffffff',
-              fontSize: '13px',
+              fontSize: '12px',
               fontWeight: 800,
-              boxShadow: '0 2px 8px rgba(79, 70, 229, 0.25)',
+              boxShadow: '0 2px 6px rgba(79, 70, 229, 0.25)',
+              whiteSpace: 'nowrap',
             }}
           >
-            + 인원 등록
+            + 등록
           </button>
           <button
             type="button"
             onClick={onOpenBatchDelete}
             style={{
-              padding: '8px 10px',
-              borderRadius: '10px',
+              padding: '7px 8px',
+              borderRadius: '9px',
               backgroundColor: '#fef2f2',
-              border: '1.5px solid #fca5a5',
+              border: '1px solid #fca5a5',
               color: '#b91c1c',
-              fontSize: '12px',
+              fontSize: '11px',
               fontWeight: 800,
+              whiteSpace: 'nowrap',
             }}
             title="인원 선택 및 전체 삭제"
           >
-            인원 정리
+            정리
+          </button>
+          <button
+            type="button"
+            onClick={onOpenRoomList}
+            style={{
+              padding: '7px 8px',
+              borderRadius: '9px',
+              backgroundColor: '#f1f5f9',
+              border: '1px solid #cbd5e1',
+              color: '#334155',
+              fontSize: '11px',
+              fontWeight: 800,
+              whiteSpace: 'nowrap',
+            }}
+            title="룸 목록 관리"
+          >
+            룸목록
           </button>
           <button
             onClick={onLogout}
             style={{
-              padding: '8px 10px',
-              borderRadius: '10px',
+              padding: '7px 8px',
+              borderRadius: '9px',
               backgroundColor: '#f1f5f9',
               border: '1px solid #e2e8f0',
               color: '#64748b',
-              fontSize: '12px',
+              fontSize: '11px',
               fontWeight: 700,
+              whiteSpace: 'nowrap',
             }}
           >
             나가기
