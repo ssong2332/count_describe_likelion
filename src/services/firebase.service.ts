@@ -18,6 +18,8 @@ import {
   toggleAttendance,
 } from '../domain/member-logic';
 import { IRoomService, MemberPayload, RoomChangeCallback } from './room-service.interface';
+import { sanitizeConfigValue } from './firebase-config';
+import { normalizeRoom } from '../domain/room-normalizer';
 
 const FIREBASE_CONFIG = {
   apiKey: 'AIzaSyC70Q-6G5fu9Fv4-tPSYZ6QfwnUyw36rgE',
@@ -40,13 +42,17 @@ export class FirebaseService implements IRoomService {
   private dbUrl: string = FIREBASE_CONFIG.databaseURL;
 
   constructor(config?: Record<string, string>) {
-    const apiKey = config?.apiKey || import.meta.env.VITE_FIREBASE_API_KEY || FIREBASE_CONFIG.apiKey;
-    const databaseURL = config?.databaseURL || import.meta.env.VITE_FIREBASE_DATABASE_URL || FIREBASE_CONFIG.databaseURL;
-    const projectId = config?.projectId || import.meta.env.VITE_FIREBASE_PROJECT_ID || FIREBASE_CONFIG.projectId;
-    const authDomain = config?.authDomain || import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || FIREBASE_CONFIG.authDomain;
-    const storageBucket = config?.storageBucket || import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || FIREBASE_CONFIG.storageBucket;
-    const messagingSenderId = config?.messagingSenderId || import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || FIREBASE_CONFIG.messagingSenderId;
-    const appId = config?.appId || import.meta.env.VITE_FIREBASE_APP_ID || FIREBASE_CONFIG.appId;
+    // 배포 플랫폼 환경변수는 따옴표·공백이 값에 섞여 들어올 수 있으므로 반드시 정제한다.
+    const pick = (...candidates: (string | undefined)[]): string =>
+      candidates.map(sanitizeConfigValue).find((v): v is string => v !== undefined) || '';
+
+    const apiKey = pick(config?.apiKey, import.meta.env.VITE_FIREBASE_API_KEY, FIREBASE_CONFIG.apiKey);
+    const databaseURL = pick(config?.databaseURL, import.meta.env.VITE_FIREBASE_DATABASE_URL, FIREBASE_CONFIG.databaseURL);
+    const projectId = pick(config?.projectId, import.meta.env.VITE_FIREBASE_PROJECT_ID, FIREBASE_CONFIG.projectId);
+    const authDomain = pick(config?.authDomain, import.meta.env.VITE_FIREBASE_AUTH_DOMAIN, FIREBASE_CONFIG.authDomain);
+    const storageBucket = pick(config?.storageBucket, import.meta.env.VITE_FIREBASE_STORAGE_BUCKET, FIREBASE_CONFIG.storageBucket);
+    const messagingSenderId = pick(config?.messagingSenderId, import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID, FIREBASE_CONFIG.messagingSenderId);
+    const appId = pick(config?.appId, import.meta.env.VITE_FIREBASE_APP_ID, FIREBASE_CONFIG.appId);
 
     this.dbUrl = databaseURL;
 
@@ -90,11 +96,7 @@ export class FirebaseService implements IRoomService {
       if (checkRes.ok) {
         const existingData = await checkRes.json();
         if (existingData) {
-          return {
-            ...existingData,
-            members: existingData.members || {},
-            adminMemberIds: existingData.adminMemberIds || [],
-          } as Room;
+          return normalizeRoom(existingData) as Room;
         }
       }
     } catch (e) {
@@ -171,11 +173,7 @@ export class FirebaseService implements IRoomService {
       if (res.ok) {
         const val = await res.json();
         if (val) {
-          return {
-            ...val,
-            members: val.members || {},
-            adminMemberIds: val.adminMemberIds || [],
-          } as Room;
+          return normalizeRoom(val);
         }
       }
     } catch (e) {
@@ -187,11 +185,7 @@ export class FirebaseService implements IRoomService {
       const snapshot = await get(this.getRoomRef(roomId));
       if (!snapshot.exists()) return null;
       const val = snapshot.val();
-      return {
-        ...val,
-        members: val.members || {},
-        adminMemberIds: val.adminMemberIds || [],
-      } as Room;
+      return normalizeRoom(val);
     } catch {
       return null;
     }
@@ -256,11 +250,7 @@ export class FirebaseService implements IRoomService {
           return;
         }
         const val = snapshot.val();
-        callback({
-          ...val,
-          members: val.members || {},
-          adminMemberIds: val.adminMemberIds || [],
-        } as Room);
+        callback(normalizeRoom(val));
       },
       (err: any) => {
         console.error('[FirebaseService] subscription error:', err);
