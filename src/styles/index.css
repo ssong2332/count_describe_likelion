@@ -1,0 +1,151 @@
+@import './variables.css';
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  min-height: 100%;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  touch-action: manipulation;
+}
+
+body {
+  background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 100%);
+  background-attachment: fixed;
+  padding-bottom: env(safe-area-inset-bottom, 24px);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Clean Card Utility */
+.glass-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
+}
+
+.glass-panel:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+/* Mobile Wrapper */
+.app-container {
+  max-width: 540px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  position: relative;
+}
+
+/* Buttons Base */
+button {
+  font-family: inherit;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  user-select: none;
+  transition: all var(--transition-fast);
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+/* Pulse Keyframes for Active Status */
+@keyframes pulseToiletLight {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+    border-color: var(--color-toilet);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(2, 132, 199, 0.35);
+    border-color: #0369a1;
+  }
+}
+
+@keyframes pulseSmokingLight {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+    border-color: var(--color-smoking);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(217, 119, 6, 0.35);
+    border-color: #b45309;
+  }
+}
+
+@keyframes pulseEtcLight {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.2);
+    border-color: var(--color-etc);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(147, 51, 234, 0.35);
+    border-color: #7e22ce;
+  }
+}
+
+.active-toilet {
+  animation: pulseToiletLight 2s infinite ease-in-out;
+  background-color: var(--color-toilet-bg) !important;
+  border-color: var(--color-toilet) !important;
+}
+
+.active-smoking {
+  animation: pulseSmokingLight 2s infinite ease-in-out;
+  background-color: var(--color-smoking-bg) !important;
+  border-color: var(--color-smoking) !important;
+}
+
+.active-etc {
+  animation: pulseEtcLight 2s infinite ease-in-out;
+  background-color: var(--color-etc-bg) !important;
+  border-color: var(--color-etc) !important;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
