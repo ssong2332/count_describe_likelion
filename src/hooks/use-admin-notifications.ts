@@ -1,60 +1,43 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Member } from '../domain/types';
+import {
+  getNotificationPermission,
+  requestNotificationPermission,
+  sendNotification,
+} from '../services/notification.service';
 
-// Web Audio API 경고음
-function playAlertBeep(frequency = 660, duration = 0.4) {
-  try {
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(frequency, ctx.currentTime);
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + duration);
-  } catch (e) {
-    console.error('Audio beep failed', e);
-  }
-}
-
+/**
+ * 관리자 알림.
+ *
+ * - 경고음(Web Audio)은 사용자 요청으로 제거했다. 알림은 무음으로 발송된다.
+ * - 발송은 notification.service를 통해서만 한다. 모바일에서 예외가 나
+ *   화면이 검게 비는 일이 없도록 이 훅은 어떤 알림 실패도 밖으로 던지지 않는다.
+ */
 export function useAdminNotifications(members: Member[], isEnabled: boolean = true) {
   const prevStatusRef = useRef<Map<string, string>>(new Map());
   const notified9MinRef = useRef<Set<string>>(new Set());
   const [overdueMembers, setOverdueMembers] = useState<Member[]>([]);
-  const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      return Notification.permission;
-    }
-    return 'default';
-  });
+  const [permissionStatus, setPermissionStatus] = useState<NotificationPermission>(() =>
+    getNotificationPermission()
+  );
 
   const requestPermission = useCallback(async () => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      try {
-        const perm = await Notification.requestPermission();
-        setPermissionStatus(perm);
-        if (perm === 'granted') {
-          playAlertBeep(587, 0.3);
-          new Notification('🔔 알림 활성화 완료', {
-            body: '자리비움 상태 전환 및 9분 초과 시 실시간 알림이 발송됩니다.',
-            icon: '/favicon.ico',
-          });
-        } else if (perm === 'denied') {
-          alert('브라우저 설정에서 알림 권한이 차단되어 있습니다. 주소창 좌측의 자물쇠/설정 아이콘을 눌러 알림을 [허용]으로 변경해주세요.');
-        }
-        return perm;
-      } catch (e) {
-        console.error('Request permission failed', e);
-      }
+    const perm = await requestNotificationPermission();
+    setPermissionStatus(perm);
+
+    if (perm === 'granted') {
+      void sendNotification(
+        '🔔 알림 활성화 완료',
+        '자리비움 상태 전환 및 9분 초과 시 휴대폰 알림이 표시됩니다.',
+        { tag: 'permission-granted' }
+      );
+    } else if (perm === 'denied') {
+      alert(
+        '브라우저 설정에서 알림 권한이 차단되어 있습니다. 주소창 좌측의 자물쇠/설정 아이콘을 눌러 알림을 [허용]으로 변경해주세요.'
+      );
     }
-    return 'denied';
+
+    return perm;
   }, []);
 
   // 상태 변경 감지
@@ -69,24 +52,22 @@ export function useAdminNotifications(members: Member[], isEnabled: boolean = tr
 
       if (prevStatus !== undefined && prevStatus !== currentStatus) {
         if (currentStatus === 'none') {
-          playAlertBeep(523, 0.2); // 도
-          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-            new Notification(`✅ [${m.name}] 복귀 완료`, {
-              body: `${m.name} 님이 자리로 복귀했습니다.`,
-              icon: '/favicon.ico',
-            });
-          }
+          void sendNotification(`✅ [${m.name}] 복귀 완료`, `${m.name} 님이 자리로 복귀했습니다.`, {
+            tag: `status-${m.id}`,
+          });
           notified9MinRef.current.delete(m.id);
         } else {
-          playAlertBeep(784, 0.3); // 솔
           const statusName =
-            currentStatus === 'toilet' ? '화장실' : currentStatus === 'smoking' ? '흡연' : m.activeReason || '기타';
-          if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-            new Notification(`🏃 [${m.name}] 자리비움 시작`, {
-              body: `${m.name} 님이 [${statusName}] 상태로 전환했습니다.`,
-              icon: '/favicon.ico',
-            });
-          }
+            currentStatus === 'toilet'
+              ? '화장실'
+              : currentStatus === 'smoking'
+                ? '흡연'
+                : m.activeReason || '기타';
+          void sendNotification(
+            `🏃 [${m.name}] 자리비움 시작`,
+            `${m.name} 님이 [${statusName}] 상태로 전환했습니다.`,
+            { tag: `status-${m.id}` }
+          );
         }
       }
 
@@ -111,16 +92,14 @@ export function useAdminNotifications(members: Member[], isEnabled: boolean = tr
 
             if (!notified9MinRef.current.has(m.id)) {
               notified9MinRef.current.add(m.id);
-              playAlertBeep(880, 0.6); // 라 (경고 톤)
 
-              if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-                const statusName =
-                  m.activeStatus === 'toilet' ? '화장실' : m.activeStatus === 'smoking' ? '흡연' : '기타';
-                new Notification(`⚠️ [경고] ${m.name} 님 9분 초과!`, {
-                  body: `${m.name} 님이 [${statusName}] 상태로 자리를 비운 지 9분이 지났습니다.`,
-                  icon: '/favicon.ico',
-                });
-              }
+              const statusName =
+                m.activeStatus === 'toilet' ? '화장실' : m.activeStatus === 'smoking' ? '흡연' : '기타';
+              void sendNotification(
+                `⚠️ [경고] ${m.name} 님 9분 초과!`,
+                `${m.name} 님이 [${statusName}] 상태로 자리를 비운 지 9분이 지났습니다.`,
+                { tag: `overdue-${m.id}`, requireInteraction: true }
+              );
             }
           }
         } else {
