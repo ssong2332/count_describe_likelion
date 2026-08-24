@@ -22,12 +22,18 @@ export function useRoomSync(roomId: string | null) {
     setIsLoading(true);
     setError(null);
 
+    const safetyTimer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
+
     const unsubscribe = roomService.subscribeRoom(roomId, (updatedRoom) => {
+      clearTimeout(safetyTimer);
       setRoom(updatedRoom);
       setIsLoading(false);
     });
 
     return () => {
+      clearTimeout(safetyTimer);
       unsubscribe();
     };
   }, [roomId, roomService]);

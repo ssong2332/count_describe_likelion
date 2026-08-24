@@ -153,6 +153,7 @@ export class FirebaseService implements IRoomService {
       },
       (err: any) => {
         console.error('[FirebaseService] subscription error:', err);
+        callback(null);
       }
     );
 
