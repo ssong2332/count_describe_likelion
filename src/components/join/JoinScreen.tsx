@@ -187,12 +187,18 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
     setErrorMsg(null);
     try {
       const cleanId = newRoomId.trim().toUpperCase();
-      await roomService.createRoom(cleanId, newPin.trim());
+      
+      const createPromise = roomService.createRoom(cleanId, newPin.trim());
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Firebase 연결 대기 시간 초과: Firebase Console에서 Realtime Database [규칙] 탭의 read/write를 true로 변경했는지 확인해주세요.')), 7000)
+      );
+      
+      await Promise.race([createPromise, timeoutPromise]);
 
       saveLastRecord({ role: 'admin', roomId: cleanId, updatedAt: Date.now() });
       onJoinSuccess({ role: 'admin', roomId: cleanId });
     } catch (err: any) {
-      setErrorMsg(err.message || '룸 생성 실패');
+      setErrorMsg(err.message || '룸 생성 실패 (Firebase 보안 규칙을 확인해주세요)');
     } finally {
       setIsLoading(false);
     }
