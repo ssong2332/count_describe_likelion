@@ -17,9 +17,15 @@ import {
   startDeparture,
   toggleAttendance,
 } from '../domain/member-logic';
-import { IRoomService, MemberPayload, RoomChangeCallback } from './room-service.interface';
+import {
+  IRoomService,
+  MemberPayload,
+  RoomChangeCallback,
+  SyncErrorCallback,
+} from './room-service.interface';
 import { sanitizeConfigValue } from './firebase-config';
 import { normalizeRoom } from '../domain/room-normalizer';
+import { firebaseRest } from './rest-client';
 
 const FIREBASE_CONFIG = {
   apiKey: 'AIzaSyC70Q-6G5fu9Fv4-tPSYZ6QfwnUyw36rgE',
@@ -92,15 +98,13 @@ export class FirebaseService implements IRoomService {
     
     // REST API 확인
     try {
-      const checkRes = await fetch(`${this.dbUrl}/rooms/${cleanId}.json`);
-      if (checkRes.ok) {
-        const existingData = await checkRes.json();
-        if (existingData) {
-          return normalizeRoom(existingData) as Room;
-        }
+      const existingData = await firebaseRest(`${this.dbUrl}/rooms/${cleanId}.json`);
+      if (existingData) {
+        return normalizeRoom(existingData) as Room;
       }
     } catch (e) {
-      console.warn('[FirebaseService] REST check fallback:', e);
+      // 조회 실패는 아래 신규 생성 경로로 진행한다 (원인은 남긴다).
+      console.error('[FirebaseService] 기존 룸 조회 실패:', e);
     }
 
     const newRoom: Room = {
@@ -115,17 +119,16 @@ export class FirebaseService implements IRoomService {
 
     // REST PUT 으로 고속 저장
     try {
-      await fetch(`${this.dbUrl}/rooms/${cleanId}.json`, {
+      await firebaseRest(`${this.dbUrl}/rooms/${cleanId}.json`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleaned),
       });
     } catch (e) {
-      console.warn('[FirebaseService] REST put fallback:', e);
+      throw e;
     }
 
     if (this.db) {
-      set(this.getRoomRef(cleanId), cleaned).catch(() => {});
+      set(this.getRoomRef(cleanId), cleaned).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
     }
 
     return newRoom;
@@ -137,30 +140,28 @@ export class FirebaseService implements IRoomService {
     
     // REST PATCH
     try {
-      await fetch(`${this.dbUrl}/rooms/${cleanId}/adminMemberIds.json`, {
+      await firebaseRest(`${this.dbUrl}/rooms/${cleanId}/adminMemberIds.json`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleanedIds),
       });
     } catch (e) {
-      console.warn(e);
+      throw e;
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${cleanId}/adminMemberIds`), cleanedIds).catch(() => {});
+      set(ref(this.db, `rooms/${cleanId}/adminMemberIds`), cleanedIds).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
     }
 
     const room = await this.getRoom(cleanId);
     if (room) {
       for (const id of Object.keys(room.members)) {
         const isAdmin = memberIds.includes(id);
-        fetch(`${this.dbUrl}/rooms/${cleanId}/members/${id}/isAdmin.json`, {
+        await firebaseRest(`${this.dbUrl}/rooms/${cleanId}/members/${id}/isAdmin.json`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(isAdmin),
-        }).catch(() => {});
+        });
         if (this.db) {
-          set(ref(this.db, `rooms/${cleanId}/members/${id}/isAdmin`), isAdmin).catch(() => {});
+          set(ref(this.db, `rooms/${cleanId}/members/${id}/isAdmin`), isAdmin).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
         }
       }
     }
@@ -169,15 +170,13 @@ export class FirebaseService implements IRoomService {
   async getRoom(roomId: string): Promise<Room | null> {
     const cleanId = roomId.trim().toUpperCase();
     try {
-      const res = await fetch(`${this.dbUrl}/rooms/${cleanId}.json`);
-      if (res.ok) {
-        const val = await res.json();
-        if (val) {
-          return normalizeRoom(val);
-        }
+      const val = await firebaseRest(`${this.dbUrl}/rooms/${cleanId}.json`);
+      if (val) {
+        return normalizeRoom(val);
       }
     } catch (e) {
-      console.warn('[FirebaseService] REST getRoom fallback:', e);
+      // SDK 경로로 재시도한다 (원인은 남긴다).
+      console.error('[FirebaseService] REST 룸 조회 실패, SDK로 재시도:', e);
     }
 
     if (!this.db) return null;
@@ -193,20 +192,18 @@ export class FirebaseService implements IRoomService {
 
   async listRooms(): Promise<{ roomId: string; memberCount: number; createdAt: number }[]> {
     try {
-      const res = await fetch(`${this.dbUrl}/rooms.json`);
-      if (res.ok) {
-        const val = await res.json();
-        if (val) {
-          const list = Object.values(val).map((r: any) => ({
-            roomId: r.roomId,
-            memberCount: Object.keys(r.members || {}).length,
-            createdAt: r.createdAt || Date.now(),
-          }));
-          return list.sort((a, b) => b.createdAt - a.createdAt);
-        }
+      const val = await firebaseRest(`${this.dbUrl}/rooms.json`);
+      if (val) {
+        const list = Object.values(val).map((r: any) => ({
+          roomId: r.roomId,
+          memberCount: Object.keys(r.members || {}).length,
+          createdAt: r.createdAt || Date.now(),
+        }));
+        return list.sort((a, b) => b.createdAt - a.createdAt);
       }
     } catch (e) {
-      console.warn(e);
+      console.error('[FirebaseService] 룸 목록 조회 실패:', e);
+      throw e;
     }
     return [];
   }
@@ -214,12 +211,12 @@ export class FirebaseService implements IRoomService {
   async deleteRoom(roomId: string): Promise<void> {
     const cleanId = roomId.trim().toUpperCase();
     try {
-      await fetch(`${this.dbUrl}/rooms/${cleanId}.json`, { method: 'DELETE' });
+      await firebaseRest(`${this.dbUrl}/rooms/${cleanId}.json`, { method: 'DELETE' });
     } catch (e) {
-      console.warn(e);
+      throw e;
     }
     if (this.db) {
-      set(this.getRoomRef(roomId), null).catch(() => {});
+      set(this.getRoomRef(roomId), null).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
     }
   }
 
@@ -229,15 +226,25 @@ export class FirebaseService implements IRoomService {
     return room.pin === pin.trim();
   }
 
-  subscribeRoom(roomId: string, callback: RoomChangeCallback): () => void {
+  subscribeRoom(
+    roomId: string,
+    callback: RoomChangeCallback,
+    onError?: SyncErrorCallback
+  ): () => void {
     const cleanId = roomId.trim().toUpperCase();
 
     // 1회 초기 REST 조회로 초고속 렌더링 보장
-    this.getRoom(cleanId).then((r) => {
-      if (r) callback(r);
-    });
+    this.getRoom(cleanId)
+      .then((r) => {
+        if (r) callback(r);
+      })
+      .catch((e) => {
+        console.error('[FirebaseService] 초기 룸 조회 실패:', e);
+        onError?.(e?.message || '클라우드에서 현황을 불러오지 못했습니다.');
+      });
 
     if (!this.db) {
+      onError?.('클라우드 연결이 초기화되지 않아 실시간 동기화가 꺼져 있습니다.');
       return () => {};
     }
 
@@ -254,6 +261,9 @@ export class FirebaseService implements IRoomService {
       },
       (err: any) => {
         console.error('[FirebaseService] subscription error:', err);
+        onError?.(
+          `실시간 연결이 끊겼습니다: ${err?.message || err}. 화면이 최신이 아닐 수 있습니다.`
+        );
       }
     );
 
@@ -278,29 +288,27 @@ export class FirebaseService implements IRoomService {
     const cleanedMember = cleanForFirebase(newMember);
 
     try {
-      await fetch(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, {
+      await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleanedMember),
       });
       if (isAdmin) {
         const updatedAdmins = Array.from(new Set([...(room.adminMemberIds || []), memberId]));
-        await fetch(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
+        await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(cleanForFirebase(updatedAdmins)),
         });
       }
     } catch (e) {
-      console.warn(e);
+      throw e;
     }
 
     if (this.db) {
       const memberRef = ref(this.db, `rooms/${room.roomId}/members/${memberId}`);
-      set(memberRef, cleanedMember).catch(() => {});
+      set(memberRef, cleanedMember).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
       if (isAdmin) {
         const updatedAdmins = Array.from(new Set([...(room.adminMemberIds || []), memberId]));
-        set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), cleanForFirebase(updatedAdmins)).catch(() => {});
+        set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), cleanForFirebase(updatedAdmins)).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
       }
     }
 
@@ -336,23 +344,21 @@ export class FirebaseService implements IRoomService {
     const cleanedAdmins = cleanForFirebase(uniqueAdmins);
 
     try {
-      await fetch(`${this.dbUrl}/rooms/${room.roomId}/members.json`, {
+      await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/members.json`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleanedMembers),
       });
-      await fetch(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
+      await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleanedAdmins),
       });
     } catch (e) {
-      console.warn(e);
+      throw e;
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${room.roomId}/members`), cleanedMembers).catch(() => {});
-      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), cleanedAdmins).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/members`), cleanedMembers).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
+      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), cleanedAdmins).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
     }
   }
 
@@ -384,23 +390,21 @@ export class FirebaseService implements IRoomService {
     const cleanedAdmins = cleanForFirebase(updatedAdmins);
 
     try {
-      await fetch(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, {
+      await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleanedUpdated),
       });
-      await fetch(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
+      await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleanedAdmins),
       });
     } catch (e) {
-      console.warn(e);
+      throw e;
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), cleanedUpdated).catch(() => {});
-      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), cleanedAdmins).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), cleanedUpdated).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
+      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), cleanedAdmins).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
     }
   }
 
@@ -416,19 +420,18 @@ export class FirebaseService implements IRoomService {
     const cleanedAdmins = cleanForFirebase(updatedAdmins);
 
     try {
-      await fetch(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, { method: 'DELETE' });
-      await fetch(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
+      await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, { method: 'DELETE' });
+      await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleanedAdmins),
       });
     } catch (e) {
-      console.warn(e);
+      throw e;
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), null).catch(() => {});
-      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), cleanedAdmins).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), null).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
+      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), cleanedAdmins).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
     }
   }
 
@@ -441,22 +444,21 @@ export class FirebaseService implements IRoomService {
 
     try {
       for (const id of memberIds) {
-        await fetch(`${this.dbUrl}/rooms/${room.roomId}/members/${id}.json`, { method: 'DELETE' });
+        await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/members/${id}.json`, { method: 'DELETE' });
       }
-      await fetch(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
+      await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleanedAdmins),
       });
     } catch (e) {
-      console.warn(e);
+      throw e;
     }
 
     if (this.db) {
       for (const id of memberIds) {
-        set(ref(this.db, `rooms/${room.roomId}/members/${id}`), null).catch(() => {});
+        set(ref(this.db, `rooms/${room.roomId}/members/${id}`), null).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
       }
-      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), cleanedAdmins).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), cleanedAdmins).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
     }
   }
 
@@ -465,23 +467,21 @@ export class FirebaseService implements IRoomService {
     if (!room) return;
 
     try {
-      await fetch(`${this.dbUrl}/rooms/${room.roomId}/members.json`, {
+      await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/members.json`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
-      await fetch(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
+      await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/adminMemberIds.json`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify([]),
       });
     } catch (e) {
-      console.warn(e);
+      throw e;
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${room.roomId}/members`), {}).catch(() => {});
-      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), []).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/members`), {}).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
+      set(ref(this.db, `rooms/${room.roomId}/adminMemberIds`), []).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
     }
   }
 
@@ -493,17 +493,16 @@ export class FirebaseService implements IRoomService {
     const cleaned = cleanForFirebase(updated);
 
     try {
-      await fetch(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, {
+      await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleaned),
       });
     } catch (e) {
-      console.warn(e);
+      throw e;
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), cleaned).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), cleaned).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
     }
   }
 
@@ -515,17 +514,16 @@ export class FirebaseService implements IRoomService {
     const cleaned = cleanForFirebase(updated);
 
     try {
-      await fetch(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, {
+      await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleaned),
       });
     } catch (e) {
-      console.warn(e);
+      throw e;
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), cleaned).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), cleaned).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
     }
   }
 
@@ -554,17 +552,16 @@ export class FirebaseService implements IRoomService {
     const cleaned = cleanForFirebase(updated);
 
     try {
-      await fetch(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, {
+      await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/members/${memberId}.json`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleaned),
       });
     } catch (e) {
-      console.warn(e);
+      throw e;
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), cleaned).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/members/${memberId}`), cleaned).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
     }
   }
 
@@ -580,17 +577,16 @@ export class FirebaseService implements IRoomService {
     const cleaned = cleanForFirebase(updatedMembers);
 
     try {
-      await fetch(`${this.dbUrl}/rooms/${room.roomId}/members.json`, {
+      await firebaseRest(`${this.dbUrl}/rooms/${room.roomId}/members.json`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cleaned),
       });
     } catch (e) {
-      console.warn(e);
+      throw e;
     }
 
     if (this.db) {
-      set(ref(this.db, `rooms/${room.roomId}/members`), cleaned).catch(() => {});
+      set(ref(this.db, `rooms/${room.roomId}/members`), cleaned).catch((e) => console.error('[FirebaseService] SDK 미러 쓰기 실패:', e));
     }
   }
 }

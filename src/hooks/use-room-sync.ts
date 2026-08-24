@@ -26,11 +26,19 @@ export function useRoomSync(roomId: string | null) {
       setIsLoading(false);
     }, 3000);
 
-    const unsubscribe = roomService.subscribeRoom(roomId, (updatedRoom) => {
-      clearTimeout(safetyTimer);
-      setRoom(updatedRoom);
-      setIsLoading(false);
-    });
+    const unsubscribe = roomService.subscribeRoom(
+      roomId,
+      (updatedRoom) => {
+        clearTimeout(safetyTimer);
+        setRoom(updatedRoom);
+        setIsLoading(false);
+      },
+      (message) => {
+        clearTimeout(safetyTimer);
+        setError(message);
+        setIsLoading(false);
+      }
+    );
 
     return () => {
       clearTimeout(safetyTimer);
