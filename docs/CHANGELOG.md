@@ -2,9 +2,33 @@
 
 모든 주요 변경 사항이 이 파일에 기록됩니다.
 
-## [Unreleased] - 2026-08-24 (10대 UX/기능 고도화)
+## [Unreleased]
 
-### 추가 / 개선 (Added & Improved)
+### 2026-08-25 (배포 후 긴급 대응 5건)
+
+배포 직후 사용자가 실기기에서 보고한 5건 — "핸드폰에서도 실시간 동기화가 되도록 해야 하는데 로컬에선 되던 기능이 배포하니 안 됨", "오류 은폐 구조", "환경변수 확인", "PWA 홈 화면 추가", "DB 무인증 공개", "핸드폰 상태 전환 시 검은 화면", "소리 알림→무음 알림 전환", "룸 목록 버튼 삭제 대안" — 에 대한 대응.
+
+#### Fixed
+
+1. **배포 환경 실시간 동기화 복구**: Vercel 환경변수 `VITE_FIREBASE_*` 7개가 큰따옴표를 포함한 채 저장되어 `databaseURL`이 깨져 REST 요청이 배포 도메인 상대경로로 404, WebSocket이 `ERR_NAME_NOT_RESOLVED`를 일으키던 문제를 `sanitizeConfigValue()`로 해결. 또한 Firebase RTDB가 빈 배열을 저장하지 않아 `logs` 키가 사라지며 `member.logs.length` 등에서 터지던 문제를 `normalizeRoom()`/`normalizeMember()`로 읽기 경로 전체에서 정규화. 배포 후 프로덕션 콘솔 에러 10건 → 0건. (커밋 279db50)
+2. **동기화 실패의 사용자 노출**: `console.warn`과 `.catch(() => {})`로 전부 삼켜지던 Firebase 실패를 제거. `firebaseRest()`가 네트워크 실패·비2xx 응답을 `SyncError`(상태코드별 한국어 안내)로 던지도록 바꾸고, 쓰기 실패 12곳을 전파, SDK 미러 무음 실패 20곳을 `console.error`로 기록, 구독 오류 콜백(`onError`)을 신설해 `useRoomSync`의 `error` 상태로 연결. (커밋 2165646)
+3. **모바일 검은 화면**: 상태 전환 시 화면이 검게 변하고 새로고침해야 복구되던 문제에 대응해 `ErrorBoundary`를 앱 루트에 배치, 알림 발송 실패가 렌더 트리를 무너뜨리지 않도록 `notification.service.ts`로 분리(원인은 Android Chrome `new Notification()` TypeError로 **추정**).
+
+#### Added
+
+4. **PWA 설치 지원**: `vite-plugin-pwa` 활성화로 `manifest.webmanifest`(standalone, 한국어, 아이콘 192/512/maskable) 및 서비스워커 생성. 핸드폰 브라우저에서 "홈 화면에 추가"로 독립 실행형 앱처럼 설치 가능. Firebase 실시간 응답은 NetworkOnly로 캐시 제외. (커밋 074f274)
+5. **Firebase Realtime Database 보안 규칙 게시**: `firebase.rules.json` 신설 — 무인증 상태의 루트 읽기·전체 룸 열거·루트 임의 쓰기·`/rooms` 통째 덮어쓰기·필수 필드 없는 룸 생성·룸 삭제를 전부 차단(401). 개별 룸 읽기·정상 운영 동작은 유지. 사용자가 Firebase 콘솔에 게시 완료. (커밋 0cc5bb7)
+
+#### Changed
+
+6. **모바일 무음 알림 전환**: 자리비움 임계 시간 초과 알림을 Web Audio 경고음(`playAlertBeep`) 없이 서비스워커 `registration.showNotification()` 경로의 무음(`silent: true`) 시스템 알림으로 전환. 인원별 `tag`로 이전 알림을 덮어쓰고, 9분 초과 건만 `requireInteraction` 유지.
+7. **룸 목록: 서버 전체 열거 → 기기 기준 기록**: 보안 규칙이 `/rooms` 전체 열거를 차단함에 따라, 룸 목록 모달이 이 기기(localStorage, 최대 10개)에서 접속했던 룸만 보여주도록 전환. 삭제 버튼은 데이터를 보존하는 "이 기기 목록에서 빼기"로 동작 변경 — 영구 삭제·복구는 Firebase 콘솔에서 수행. (커밋 a172d58)
+
+> 검증: 신규 테스트 파일 6개 추가(`firebase-config`, `rest-client`, `room-history`, `room-normalizer`, `notification-service`, `error-boundary`). 테스트 총계 20개 → 60개(11개 파일), 마지막 실행 60 passed(인용 — Tasks.md T-09~T-13 근거 열에서 가져온 수치, 이번 세션에서 직접 재실행하지 않음).
+
+### 2026-08-24 (10대 UX/기능 고도화)
+
+#### 추가 / 개선 (Added & Improved)
 1. **메인 화면 간소화**: 메인 접속 화면에서 '룸 목록 관리' 버튼을 제거하여 진입 경로 단일화.
 2. **원클릭 빠른 입장**: 최근 접속 기록의 `[불러오기]` 버튼 클릭 시 폼 채우기 단계를 건너뛰고 해당 룸/역할로 즉시 대시보드 진입.
 3. **실제 시간표/전우조 프리셋 적용**: 새 인원 등록 시 전우조(`메인 운영진`, `전우조1`, `전우조2`, `전원`) 및 시간대(`12:00 ~ 13:05`, `13:00 ~ 14:05`, `14:00 ~ 15:05`, `15:00 ~ 16:05`, `16:00 ~ 17:05`, `17:30 ~ 18:00`) 퀵 칩 지원.
