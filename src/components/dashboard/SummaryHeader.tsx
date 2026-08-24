@@ -68,9 +68,6 @@ export const SummaryHeader: React.FC<SummaryHeaderProps> = ({
               관리자
             </span>
           </div>
-          <p style={{ fontSize: '11px', color: '#64748b', marginTop: '1px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            실시간 출결 & 9분 알림
-          </p>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>

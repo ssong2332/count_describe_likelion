@@ -3,6 +3,7 @@ import { Modal } from '../common/Modal';
 import { Member } from '../../domain/types';
 import { MemberPayload } from '../../services/room-service.interface';
 import { Users, Clock, Phone, User } from 'lucide-react';
+import { PRESET_SHIFTS, isShiftSelected, toggleShiftTime } from '../../domain/shift-time';
 
 interface MemberFormModalProps {
   isOpen: boolean;
@@ -13,14 +14,6 @@ interface MemberFormModalProps {
 
 // 1번 요구사항: 기획조, 운영조 제거하고 실제 전우조1, 전우조2만 제공
 const PRESET_GROUPS = ['전우조1', '전우조2'];
-const PRESET_SHIFTS = [
-  '12:00 ~ 13:05',
-  '13:00 ~ 14:05',
-  '14:00 ~ 15:05',
-  '15:00 ~ 16:05',
-  '16:00 ~ 17:05',
-  '17:30 ~ 18:00',
-];
 
 export const MemberFormModal: React.FC<MemberFormModalProps> = ({
   isOpen,
@@ -178,31 +171,35 @@ export const MemberFormModal: React.FC<MemberFormModalProps> = ({
         {/* Booth Schedule Time */}
         <div>
           <label style={{ fontSize: '13px', color: '#475569', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
-            <Clock size={15} /> 부스 운영 시간대
+            <Clock size={15} /> 부스 운영 시간대 <span style={{ fontWeight: 700, color: '#94a3b8' }}>(중복 선택 가능)</span>
           </label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
-            {PRESET_SHIFTS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setShiftTime(s)}
-                style={{
-                  padding: '5px 10px',
-                  borderRadius: '16px',
-                  backgroundColor: shiftTime === s ? '#f0f9ff' : '#f8fafc',
-                  color: shiftTime === s ? '#0284c7' : '#475569',
-                  border: `1.5px solid ${shiftTime === s ? '#0284c7' : '#cbd5e1'}`,
-                  fontSize: '12px',
-                  fontWeight: 800,
-                }}
-              >
-                {s}
-              </button>
-            ))}
+            {PRESET_SHIFTS.map((s) => {
+              const selected = isShiftSelected(shiftTime, s);
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() => setShiftTime(toggleShiftTime(shiftTime, s))}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '16px',
+                    backgroundColor: selected ? '#f0f9ff' : '#f8fafc',
+                    color: selected ? '#0284c7' : '#475569',
+                    border: `1.5px solid ${selected ? '#0284c7' : '#cbd5e1'}`,
+                    fontSize: '12px',
+                    fontWeight: 800,
+                  }}
+                >
+                  {selected ? `✓ ${s}` : s}
+                </button>
+              );
+            })}
           </div>
           <input
             type="text"
-            placeholder="직접 입력 (예: 12:00 ~ 13:05)"
+            placeholder="선택한 시간대 (콤마로 구분, 직접 입력 가능)"
             value={shiftTime}
             onChange={(e) => setShiftTime(e.target.value)}
             style={{
