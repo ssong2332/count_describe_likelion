@@ -1,0 +1,42 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "rooms": {
+      ".read": false,
+      ".write": false,
+
+      "$roomId": {
+        ".read": true,
+        ".write": "newData.exists()",
+
+        ".validate": "newData.hasChildren(['roomId', 'pin', 'createdAt'])",
+
+        "roomId": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40"
+        },
+        "pin": {
+          ".validate": "newData.isString() && newData.val().length >= 4 && newData.val().length <= 20"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        },
+
+        "members": {
+          "$memberId": {
+            "name": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40"
+            },
+            "activeStatus": {
+              ".validate": "newData.isString() && newData.val().matches(/^(none|toilet|smoking|etc)$/)"
+            },
+            "isPresent": {
+              ".validate": "newData.isBoolean()"
+            }
+          }
+        }
+      }
+    }
+  }
+}
