@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal } from '../common/Modal';
 import { DepartureType, Member } from '../../domain/types';
 import { useTimer } from '../../hooks/use-timer';
+import { parseShiftTimes } from '../../domain/shift-time';
 import { Badge } from '../common/Badge';
 import { Clock, Cigarette, HelpCircle, History, Edit2, Trash2, Users, Phone } from 'lucide-react';
 
@@ -75,11 +76,23 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
                   <Users size={13} /> {member.group}
                 </span>
               )}
-              {member.shiftTime && (
-                <span style={{ fontSize: '12px', color: '#0284c7', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                  <Clock size={13} /> {member.shiftTime}
+              {parseShiftTimes(member.shiftTime).map((slot, idx) => (
+                <span
+                  key={slot}
+                  style={{
+                    fontSize: '12px',
+                    color: '#0284c7',
+                    fontWeight: 800,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '3px',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {idx === 0 && <Clock size={13} />}
+                  {slot}
                 </span>
-              )}
+              ))}
             </div>
           </div>
 
@@ -97,10 +110,13 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '4px',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+                alignSelf: 'flex-start',
               }}
             >
               <Phone size={13} color="#4f46e5" />
-              <span>{member.phone}</span>
+              <span style={{ whiteSpace: 'nowrap' }}>{member.phone}</span>
             </div>
           )}
         </div>
@@ -155,9 +171,11 @@ export const MemberDetailModal: React.FC<MemberDetailModalProps> = ({
                 fontSize: '13px',
                 fontWeight: 900,
                 boxShadow: '0 2px 8px rgba(5, 150, 105, 0.25)',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
               }}
             >
-              출석 체크하기
+              출석 체크
             </button>
           )}
         </div>

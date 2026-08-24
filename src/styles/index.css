@@ -21,6 +21,19 @@ body {
   background: linear-gradient(180deg, #f1f5f9 0%, #f8fafc 100%);
   background-attachment: fixed;
   padding-bottom: env(safe-area-inset-bottom, 24px);
+  /*
+    한국어는 기본 줄바꿈 규칙이 단어 중간을 끊는다 ("관리자 연락처"가
+    "관리 자 연 락 처"로 쪼개짐). 좁은 화면에서 이게 디자인을 무너뜨리므로
+    어절 단위로만 끊는다.
+  */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* 버튼 라벨은 어떤 폭에서도 쪼개지지 않는다 (아이콘+짧은 라벨 전제) */
+.nowrap {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Scrollbar styling */

@@ -6,6 +6,7 @@ import { ReasonModal } from '../modals/ReasonModal';
 import { StatusLogDrawer } from '../modals/StatusLogDrawer';
 import { Clock, Cigarette, HelpCircle, History, LogOut, CheckCircle2, UserX, Users, AlertCircle, PhoneCall, Phone, ShieldCheck } from 'lucide-react';
 import { DepartureType } from '../../domain/types';
+import { parseShiftTimes } from '../../domain/shift-time';
 import { Modal } from '../common/Modal';
 
 interface UserControlPanelProps {
@@ -103,10 +104,10 @@ export const UserControlPanel: React.FC<UserControlPanelProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', gap: '14px', paddingBottom: '30px' }}>
       {/* Top Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <h2 style={{ fontSize: '22px', fontWeight: 900, color: '#0f172a' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap', padding: '4px 0' }}>
+        <div style={{ minWidth: 0, flex: '1 1 200px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <h2 style={{ fontSize: '22px', fontWeight: 900, color: '#0f172a', whiteSpace: 'nowrap' }}>
               {member.name} 님
             </h2>
             <Badge
@@ -148,23 +149,41 @@ export const UserControlPanel: React.FC<UserControlPanelProps> = ({
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px' }}>
-            <span style={{ fontSize: '13px', color: '#64748b' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '3px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '13px', color: '#64748b', whiteSpace: 'nowrap' }}>
               룸: <strong style={{ color: '#4f46e5' }}>{roomId}</strong>
             </span>
-            {member.shiftTime && (
-              <span style={{ fontSize: '13px', color: '#0284c7', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                <Clock size={12} /> 부스: {member.shiftTime}
+            {/* 시간대는 슬롯마다 따로 칩으로 둔다 — 한 덩어리면 "12:00 ~" 중간에서 끊긴다 */}
+            {parseShiftTimes(member.shiftTime).map((slot, idx) => (
+              <span
+                key={slot}
+                style={{
+                  fontSize: '12px',
+                  color: '#0284c7',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  whiteSpace: 'nowrap',
+                  padding: '1px 7px',
+                  borderRadius: '6px',
+                  backgroundColor: '#f0f9ff',
+                  border: '1px solid #bae6fd',
+                }}
+              >
+                {idx === 0 && <Clock size={11} />}
+                {slot}
               </span>
-            )}
+            ))}
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div style={{ display: 'flex', gap: '6px', flexShrink: 0, marginLeft: 'auto' }}>
           {/* 1번 요구사항: 관리자 연락처 확인 버튼 */}
           <button
             type="button"
             onClick={() => setIsAdminContactOpen(true)}
+            title="관리자 연락처 보기"
             style={{
               padding: '8px 10px',
               borderRadius: '10px',
@@ -176,9 +195,11 @@ export const UserControlPanel: React.FC<UserControlPanelProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               gap: '3px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
             }}
           >
-            <PhoneCall size={13} /> 관리자 연락처 ({adminMembers.length})
+            <PhoneCall size={13} /> 연락처 {adminMembers.length > 0 && `(${adminMembers.length})`}
           </button>
           <button
             type="button"
@@ -192,6 +213,11 @@ export const UserControlPanel: React.FC<UserControlPanelProps> = ({
               fontSize: '12px',
               fontWeight: 800,
               boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '3px',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
             }}
           >
             <History size={14} /> 기록
@@ -206,6 +232,8 @@ export const UserControlPanel: React.FC<UserControlPanelProps> = ({
               color: '#64748b',
               fontSize: '12px',
               fontWeight: 700,
+              flexShrink: 0,
+              lineHeight: 0,
             }}
           >
             <LogOut size={14} />
