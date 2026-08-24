@@ -253,6 +253,8 @@ export const SummaryHeader: React.FC<SummaryHeaderProps> = ({
               border: 'none',
               cursor: 'pointer',
               boxShadow: '0 2px 4px rgba(217, 119, 6, 0.25)',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
             }}
           >
             알림 켜기
