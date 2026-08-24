@@ -3,6 +3,7 @@ import { UserSession } from './domain/types';
 import { JoinScreen } from './components/join/JoinScreen';
 import { AdminDashboard } from './components/dashboard/AdminDashboard';
 import { UserControlPanel } from './components/user-panel/UserControlPanel';
+import { recordRoomVisit } from './services/room-history';
 
 const SESSION_STORAGE_KEY = 'count_status_user_session';
 
@@ -20,6 +21,8 @@ export default function App() {
   useEffect(() => {
     if (session) {
       localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+      // 룸 목록은 서버 열거 대신 이 기기의 접속 기록으로 만든다 (보안 규칙 참조)
+      recordRoomVisit(session.roomId, session.role);
     } else {
       localStorage.removeItem(SESSION_STORAGE_KEY);
     }
