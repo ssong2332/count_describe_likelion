@@ -561,11 +561,13 @@ export const JoinScreen: React.FC<JoinScreenProps> = ({ onJoinSuccess }) => {
                 ) : (
                   <>
                     <select
+                      className="select-field"
                       value={selectedMemberId}
                       onChange={(e) => setSelectedMemberId(e.target.value)}
                       style={{
                         width: '100%',
-                        padding: '12px 14px',
+                        /* 오른쪽 여백은 커스텀 화살표 자리 */
+                        padding: '12px 42px 12px 14px',
                         backgroundColor: '#f8fafc',
                         border: '2px solid #cbd5e1',
                         borderRadius: '12px',
