@@ -43,7 +43,7 @@ export class FirebaseService implements IRoomService {
         } else {
           this.app = getApps()[0];
         }
-        this.db = getDatabase(this.app);
+        this.db = getDatabase(this.app, databaseURL);
       } catch (e) {
         console.error('[FirebaseService] Init failed:', e);
       }
