@@ -2,6 +2,9 @@ import { DepartureType, Member, Room } from '../domain/types';
 
 export type RoomChangeCallback = (room: Room | null) => void;
 
+/** 실시간 구독이 끊기거나 거부됐을 때의 통지 (사용자에게 노출하기 위함) */
+export type SyncErrorCallback = (message: string) => void;
+
 export interface MemberPayload {
   name: string;
   phone?: string;
@@ -45,7 +48,11 @@ export interface IRoomService {
   /**
    * 룸 실시간 변경 구독
    */
-  subscribeRoom(roomId: string, callback: RoomChangeCallback): () => void;
+  subscribeRoom(
+    roomId: string,
+    callback: RoomChangeCallback,
+    onError?: SyncErrorCallback
+  ): () => void;
 
   /**
    * 인원 추가
