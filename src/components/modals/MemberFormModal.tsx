@@ -4,6 +4,7 @@ import { Member } from '../../domain/types';
 import { MemberPayload } from '../../services/room-service.interface';
 import { Users, Clock, Phone, User } from 'lucide-react';
 import { PRESET_SHIFTS, isShiftSelected, toggleShiftTime } from '../../domain/shift-time';
+import { formatPhoneNumber, normalizePhoneNumber } from '../../domain/phone-format';
 
 interface MemberFormModalProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ export const MemberFormModal: React.FC<MemberFormModalProps> = ({
   useEffect(() => {
     if (editingMember) {
       setName(editingMember.name || '');
-      setPhone(editingMember.phone || '');
+      setPhone(formatPhoneNumber(editingMember.phone));
       setGroup(editingMember.group || '');
       setShiftTime(editingMember.shiftTime || '');
     } else {
@@ -55,7 +56,7 @@ export const MemberFormModal: React.FC<MemberFormModalProps> = ({
     try {
       await onSubmit({
         name: name.trim(),
-        phone: phone.trim() || undefined,
+        phone: normalizePhoneNumber(phone),
         group: group.trim() || undefined,
         shiftTime: shiftTime.trim() || undefined,
       });
@@ -107,9 +108,12 @@ export const MemberFormModal: React.FC<MemberFormModalProps> = ({
           </label>
           <input
             type="tel"
-            placeholder="예: 010-1234-5678"
+            inputMode="numeric"
+            autoComplete="tel"
+            maxLength={13}
+            placeholder="숫자만 입력하면 - 가 자동으로 붙습니다"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
             style={{
               width: '100%',
               padding: '10px 12px',
